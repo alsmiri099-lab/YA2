@@ -2,8 +2,8 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || 'https://eedfepjatrxgpdowybyw.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZGZlcGphdHJ4Z3Bkb3d5Ynl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDAwOTM0OSwiZXhwIjoyMDk5NTg1MzQ5fQ.L-PVQx1sL8PXe7Rwp9IakgLupM2xPwXG3tFRxttKfWU';
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase URL or Key is missing in environment variables.');
