@@ -6,6 +6,34 @@
   <title>اقرأ | تسجيل الدخول</title>
   <link rel="icon" type="image/jpeg" href="favicon.jpeg">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pin-input-wrap {
+      position: relative;
+    }
+    .pin-input {
+      width: 100%;
+      letter-spacing: 0.6rem;
+      font-size: 1.6rem;
+      text-align: center;
+      font-weight: 900;
+      font-family: monospace;
+      padding: 0.6rem 1rem;
+    }
+    .pin-hint {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      text-align: right;
+    }
+    .btn-submit-main {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+  </style>
 </head>
 <body>
 
@@ -35,23 +63,35 @@
         <button id="tabLogin" class="tab-btn" onclick="switchTab('login')">🎓 دخول المعلم</button>
       </div>
 
-      <!-- Student Login (from Naqati) -->
+      <!-- Student Login Form (مطابق لبوابة الطالب في نقاطي) -->
       <form id="studentLoginForm" onsubmit="handleStudentLogin(event)">
         <div class="form-group">
-          <label for="studentSearch">اسم الطالب</label>
-          <input type="text" id="studentSearch" class="form-control" placeholder="🔍 اكتب جزءاً من اسمك" oninput="renderStudentOptions()" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <select id="studentSelect" class="form-control" required size="5" style="height: auto; min-height: 150px;">
-            <option value="">⏳ جاري تحميل الأسماء من نقاطي...</option>
+          <label for="loginClassSelect">🏫 الحلقة القرآنية:</label>
+          <select id="loginClassSelect" class="form-control" onchange="onClassChange()" required>
+            <option value="">⏳ جاري تحميل الحلقات من نقاطي...</option>
           </select>
         </div>
+
         <div class="form-group">
-          <label for="studentPin">رمز الدخول</label>
-          <input type="password" id="studentPin" class="form-control" placeholder="الرمز الظاهر عند القائد في نقاطي" inputmode="numeric" required autocomplete="off" style="text-align: center; font-size: 1.3rem; letter-spacing: 6px;">
+          <label for="loginStudentSelect">👨‍🎓 اسم الطالب:</label>
+          <select id="loginStudentSelect" class="form-control" required>
+            <option value="">اختر الحلقة أولاً</option>
+          </select>
         </div>
-        <button type="submit" class="btn btn-primary">دخول للمنصة</button>
-        <p style="text-align: center; margin-top: 12px; font-size: 0.88rem; color: var(--text-muted);">
+
+        <div class="form-group">
+          <label for="loginPinInput">🔒 رمز الدخول (رقمين):</label>
+          <div class="pin-input-wrap">
+            <input type="password" id="loginPinInput" class="form-control pin-input" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="••" autocomplete="off" required>
+          </div>
+          <small class="pin-hint">
+            💡 الرمز تم تزويدك به من قِبل معلم الحلقة في نقاطي (مكون من رقمين)
+          </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-submit-main">دخول للمنصة ⬅️</button>
+
+        <p style="text-align: center; margin-top: 14px; font-size: 0.88rem; color: var(--text-muted);">
           🔗 الحساب مرتبط بمنظومة <b>نقاطي</b> — نقاط قراءتك تُضاف لرصيدك هناك تلقائياً
         </p>
         <p id="naqatiLinkWrap" style="text-align: center; margin-top: 6px; display: none;">
@@ -59,7 +99,7 @@
         </p>
       </form>
 
-      <!-- Teacher Login Form -->
+      <!-- Teacher Login Form (كما هو) -->
       <form id="loginForm" onsubmit="handleLogin(event)" style="display: none;">
         <div class="form-group">
           <label for="loginUsername">اسم المستخدم</label>
@@ -69,7 +109,7 @@
           <label for="loginPassword">كلمة المرور</label>
           <input type="password" id="loginPassword" class="form-control" placeholder="أدخل كلمة المرور" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-primary">دخول للمنصة</button>
+        <button type="submit" class="btn btn-primary btn-submit-main">دخول للمنصة</button>
       </form>
 
     </div>
@@ -78,6 +118,7 @@
   <script src="js/auth.js"></script>
   <script>
     let naqatiStudents = [];
+    let classesList = [];
 
     window.addEventListener('DOMContentLoaded', async () => {
       // دخول تلقائي عند القدوم من بوابة الطالب في نقاطي: index.html#nq=<id>&pin=<code>
@@ -90,14 +131,14 @@
         if (ok) return;
       }
 
-      // Redirect if already logged in
+      // توجيه تلقائي إذا كان المستخدم مسجل دخوله مسبقاً
       const user = getUser();
       if (user && !autoId) {
         window.location.href = user.role === 'teacher' ? 'teacher.html' : 'student.html';
         return;
       }
 
-      loadNaqatiStudents(autoId);
+      await loadNaqatiStudents(autoId);
       loadLinkInfo();
     });
 
@@ -113,42 +154,85 @@
     }
 
     async function loadNaqatiStudents(preselectId) {
-      const sel = document.getElementById('studentSelect');
+      const classSel = document.getElementById('loginClassSelect');
+      const studentSel = document.getElementById('loginStudentSelect');
       try {
         const r = await fetch(`${API_BASE}/auth/naqati-students`);
         const d = await r.json();
-        if (!r.ok) throw new Error(d.error);
+        if (!r.ok) throw new Error(d.error || 'فشل جلب البيانات');
         naqatiStudents = d.students || [];
-        renderStudentOptions();
-        if (preselectId) sel.value = preselectId;
+
+        // تجميع الحلقات القرآنية من قائمة الطلاب
+        const classMap = new Map();
+        naqatiStudents.forEach(s => {
+          const cId = s.classId || s.className || 'default';
+          const cName = s.className || 'عامة';
+          if (!classMap.has(cId)) {
+            classMap.set(cId, { id: cId, name: cName });
+          }
+        });
+        classesList = Array.from(classMap.values());
+
+        if (classesList.length === 0) {
+          classSel.innerHTML = '<option value="">لا توجد حلقات حالياً</option>';
+          studentSel.innerHTML = '<option value="">لا يوجد طلاب</option>';
+          return;
+        }
+
+        // اختيار الحلقة المحفوظة في localStorage إن وجدت
+        const savedClassId = localStorage.getItem('naqati_student_class_id');
+        let matched = false;
+
+        classSel.innerHTML = classesList.map(c => {
+          const isSel = savedClassId && c.id === savedClassId;
+          if (isSel) matched = true;
+          return `<option value="${escapeAttr(c.id)}" ${isSel ? 'selected' : ''}>${escapeAttr(c.name)}</option>`;
+        }).join('');
+
+        // إذا كان هناك طالب محدد مسبقاً (عبر الرابط مثلاً) نحدد حلقته
+        if (preselectId) {
+          const found = naqatiStudents.find(s => s.id === preselectId);
+          if (found) {
+            const foundClassId = found.classId || found.className || 'default';
+            classSel.value = foundClassId;
+            matched = true;
+          }
+        }
+
+        const activeClassId = matched ? classSel.value : classesList[0].id;
+        classSel.value = activeClassId;
+        populateStudentsForClass(activeClassId, preselectId);
+
       } catch (e) {
-        sel.innerHTML = `<option value="">⚠️ ${e.message || 'تعذر تحميل الأسماء'}</option>`;
+        classSel.innerHTML = `<option value="">⚠️ ${e.message || 'تعذر تحميل الحلقات'}</option>`;
+        studentSel.innerHTML = '<option value="">تعذر تحميل الطلاب</option>';
       }
     }
 
-    function normalizeAr(s) {
-      return String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').toLowerCase().trim();
+    function onClassChange() {
+      const classId = document.getElementById('loginClassSelect').value;
+      localStorage.setItem('naqati_student_class_id', classId);
+      populateStudentsForClass(classId);
     }
 
-    function renderStudentOptions() {
-      const sel = document.getElementById('studentSelect');
-      const q = normalizeAr(document.getElementById('studentSearch').value);
-      const prev = sel.value;
-      const list = naqatiStudents.filter(s => !q || normalizeAr(s.name).includes(q));
-      if (!list.length) {
-        sel.innerHTML = '<option value="">لا يوجد اسم مطابق</option>';
+    function populateStudentsForClass(classId, preselectId) {
+      const studentSel = document.getElementById('loginStudentSelect');
+      const filtered = naqatiStudents
+        .filter(s => (s.classId || s.className || 'default') === classId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+      if (filtered.length === 0) {
+        studentSel.innerHTML = '<option value="">لا يوجد طلاب في هذه الحلقة</option>';
         return;
       }
-      // تجميع حسب الحلقة
-      const groups = {};
-      list.forEach(s => { (groups[s.className || 'بدون حلقة'] = groups[s.className || 'بدون حلقة'] || []).push(s); });
-      sel.innerHTML = Object.keys(groups).map(g =>
-        `<optgroup label="${escapeAttr(g)}">` +
-        groups[g].map(s => `<option value="${escapeAttr(s.id)}">${escapeAttr((s.avatar || '') + ' ' + s.name)}</option>`).join('') +
-        '</optgroup>'
+
+      studentSel.innerHTML = filtered.map(s =>
+        `<option value="${escapeAttr(s.id)}" ${preselectId && s.id === preselectId ? 'selected' : ''}>${escapeAttr((s.avatar || '👨‍🎓') + ' ' + s.name)}</option>`
       ).join('');
-      if (prev && list.some(s => s.id === prev)) sel.value = prev;
-      else if (list.length === 1) sel.value = list[0].id;
+
+      if (preselectId && filtered.some(s => s.id === preselectId)) {
+        studentSel.value = preselectId;
+      }
     }
 
     function escapeAttr(s) {
@@ -175,9 +259,19 @@
 
     function handleStudentLogin(e) {
       e.preventDefault();
-      const studentId = document.getElementById('studentSelect').value;
-      const pin = document.getElementById('studentPin').value.trim();
-      if (!studentId) { showAlert('authAlert', 'اختر اسمك من القائمة', 'danger'); return; }
+      const studentId = document.getElementById('loginStudentSelect').value;
+      const pin = document.getElementById('loginPinInput').value.trim();
+
+      if (!studentId) {
+        showAlert('authAlert', 'يرجى اختيار اسم الطالب', 'danger');
+        return;
+      }
+      if (pin.length < 2) {
+        showAlert('authAlert', 'يرجى إدخال رمز الدخول المكون من رقمين', 'danger');
+        document.getElementById('loginPinInput').focus();
+        return;
+      }
+
       studentLogin(studentId, pin, false);
     }
 

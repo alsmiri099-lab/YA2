@@ -69,7 +69,7 @@ app.post('/api/auth/register-student', (req, res) => {
 app.get('/api/auth/naqati-students', async (req, res) => {
   try {
     const students = await naqati.listStudents();
-    res.json({ students: students.map(s => ({ id: s.id, name: s.name, className: s.className, avatar: s.avatar })) });
+    res.json({ students: students.map(s => ({ id: s.id, name: s.name, className: s.className, classId: s.classId, avatar: s.avatar })) });
   } catch (error) {
     console.error('naqati-students error:', error.message);
     res.status(503).json({ error: 'تعذر الاتصال بمنظومة نقاطي حالياً' });
