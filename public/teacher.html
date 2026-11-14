@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم المعلم | اقرأ</title>
+  <link rel="icon" type="image/jpeg" href="favicon.jpeg">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="teacher.html" class="logo">
+        <img src="favicon.jpeg" alt="اقرأ" class="logo-icon" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+        <span>اقرأ | لوحة المعلم</span>
+      </a>
+      <div class="user-nav-info">
+        <span class="user-badge" id="teacherName">المعلم</span>
+        <a id="naqatiNavLink" href="#" target="_blank" class="btn btn-secondary" style="width: auto; padding: 8px 14px; display: none; text-decoration: none;">⭐ نقاطي</a>
+        <button onclick="logout()" class="btn btn-secondary" style="width: auto; padding: 8px 16px;">تسجيل الخروج</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    <div id="teacherAlert" class="alert"></div>
+
+    <!-- قسم الطلاب المعلقين بانتظار الموافقة (يظهر فوق كل شي) -->
+    <div class="card" id="pendingStudentsCard" style="margin-bottom: 24px; display: none;">
+      <h3 class="card-title">🔔 طلاب بانتظار الموافقة</h3>
+      <div id="pendingStudentsList" class="pending-list"></div>
+    </div>
+
+    <!-- شريط الإجراءات السريعة -->
+    <div class="quick-actions-bar">
+      <button class="quick-action-btn" onclick="switchTab('assignments'); document.getElementById('bookName').focus();">
+        <span class="quick-action-icon">📅</span>
+        <span>+ ورد جديد</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchTab('settings'); setTimeout(() => document.getElementById('linkCard').scrollIntoView({behavior:'smooth'}), 100);">
+        <span class="quick-action-icon">🔗</span>
+        <span>ربط نقاطي</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchTab('accounts'); setTimeout(() => document.getElementById('pointsStudentSelect').focus(), 100);">
+        <span class="quick-action-icon">⭐</span>
+        <span>إدارة نقاط</span>
+      </button>
+    </div>
+
+
+
+    <!-- شريط التبويبات -->
+    <div class="teacher-tabs">
+      <button class="teacher-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="teacher-tab-icon">📊</span>
+        <span class="teacher-tab-text">لوحة القيادة</span>
+      </button>
+      <button class="teacher-tab" data-tab="assignments" onclick="switchTab('assignments')">
+        <span class="teacher-tab-icon">📖</span>
+        <span class="teacher-tab-text">الأوراد</span>
+      </button>
+      <button class="teacher-tab" data-tab="accounts" onclick="switchTab('accounts')">
+        <span class="teacher-tab-icon">👥</span>
+        <span class="teacher-tab-text">الحسابات</span>
+      </button>
+      <button class="teacher-tab" data-tab="messages" onclick="switchTab('messages')">
+        <span class="teacher-tab-icon">💬</span>
+        <span class="teacher-tab-text">الرسائل والمحادثات</span>
+        <span id="unreadMessagesBadgeCount" class="badge-count" style="display:none; background:#EF4444; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:50px; margin-right:4px;">0</span>
+      </button>
+      <button class="teacher-tab" data-tab="feedback" onclick="switchTab('feedback')">
+        <span class="teacher-tab-icon">💡</span>
+        <span class="teacher-tab-text">الاقتراحات والملاحظات</span>
+        <span id="feedbackBadgeCount" class="badge-count" style="display:none; background:#D97706; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:50px; margin-right:4px;">0</span>
+      </button>
+      <button class="teacher-tab" data-tab="settings" onclick="switchTab('settings')">
+        <span class="teacher-tab-icon">⚙️</span>
+        <span class="teacher-tab-text">الإعدادات</span>
+      </button>
+    </div>
+
+
+    <!-- ==================== تبويب 1: لوحة القيادة ==================== -->
+    <div class="teacher-tab-content active" id="tab-dashboard">
+
+      <!-- Stats summary -->
+      <div class="card" style="padding: 20px;">
+        <h3 style="margin-bottom: 10px;">نظرة عامة على المجموعة 📊</h3>
+        <div class="overview-stats-grid">
+          <div class="student-list-item" style="border-right-color: var(--primary);">
+            <div>
+              <div class="name" style="font-size: 1.5rem;" id="statTotalStudents">0</div>
+              <div class="username">طلابي المسجلين</div>
+            </div>
+          </div>
+          <div class="student-list-item" style="border-right-color: var(--accent);">
+            <div>
+              <div class="name" style="font-size: 1.5rem;" id="statTotalSubmissions">0</div>
+              <div class="username">إنجازات القراءة</div>
+            </div>
+          </div>
+          <div class="student-list-item" style="border-right-color: #f59e0b;">
+            <div>
+              <div class="name" style="font-size: 1.5rem;" id="statPendingStudents">0</div>
+              <div class="username">بانتظار الموافقة</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- قسم الإحصائيات المتقدمة -->
+      <div class="card" id="statisticsCard">
+        <h3 class="card-title">
+          <span>📈 الإحصائيات والتقارير</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button onclick="loadStatistics('today')" id="statFilterToday" class="stat-filter-btn">اليوم</button>
+            <button onclick="loadStatistics('week')" id="statFilterWeek" class="stat-filter-btn">الأسبوع</button>
+            <button onclick="loadStatistics('all')" id="statFilterAll" class="stat-filter-btn active">الكل</button>
+            <button onclick="downloadStatsAsImage()" class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;">📥 تحميل كصورة</button>
+          </div>
+        </h3>
+        <div id="statisticsContent">
+          <div class="empty-state">جاري تحميل الإحصائيات...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== تبويب 2: إدارة الأوراد ==================== -->
+    <div class="teacher-tab-content" id="tab-assignments">
+
+      <!-- إضافة ورد قراءة يومي -->
+      <div class="card">
+        <h3 class="card-title">إضافة ورد قراءة يومي 📅</h3>
+        <form id="assignmentForm" onsubmit="handleCreateAssignment(event)">
+          <div class="form-group">
+            <label for="bookName">اسم الكتاب</label>
+            <input type="text" id="bookName" class="form-control" placeholder="مثال: رياض الصالحين" required>
+          </div>
+          <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label for="startPage">من صفحة</label>
+              <input type="number" id="startPage" class="form-control" min="1" required>
+            </div>
+            <div>
+              <label for="endPage">إلى صفحة</label>
+              <input type="number" id="endPage" class="form-control" min="1" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="targetDate">تاريخ الورد</label>
+            <input type="date" id="targetDate" class="form-control" required>
+          </div>
+          <label class="bulk-toggle">
+            <input type="checkbox" id="bulkScheduleToggle" onchange="toggleBulkSchedule()">
+            <span>📅 جدولة جماعية (نطاق تواريخ)</span>
+          </label>
+          <div class="bulk-date-range" id="bulkDateRange">
+            <div class="form-group">
+              <label for="bulkStartDate">من تاريخ</label>
+              <input type="date" id="bulkStartDate" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="bulkEndDate">إلى تاريخ</label>
+              <input type="date" id="bulkEndDate" class="form-control">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">جدولة ونشر الورد</button>
+        </form>
+      </div>
+
+      <!-- تتبع إنجازات الطلاب -->
+      <div class="card">
+        <h3 class="card-title">تتبع إنجازات الطلاب 📥</h3>
+        <div class="table-responsive">
+          <table id="submissionsTable">
+            <thead>
+              <tr>
+                <th>الطالب</th>
+                <th>الكتاب والصفحات</th>
+                <th>تاريخ الورد</th>
+                <th>حالة الإنجاز</th>
+                <th>النقاط</th>
+                <th>الأسئلة والخواطر</th>
+                <th>وقت التسليم</th>
+              </tr>
+            </thead>
+            <tbody id="submissionsList">
+              <tr>
+                <td colspan="7" class="empty-state">
+                  <div class="empty-state-icon">📥</div>
+                  لا توجد إنجازات مرسلة بعد.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- سجل الأوراد المجدولة -->
+      <div class="card">
+        <h3 class="card-title">سجل الأوراد المجدولة 📋</h3>
+        <div class="table-responsive">
+          <table id="assignmentsTable">
+            <thead>
+              <tr>
+                <th>اسم الكتاب</th>
+                <th>من صفحة</th>
+                <th>إلى صفحة</th>
+                <th>تاريخ الورد</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="assignmentsList">
+              <tr>
+                <td colspan="5" class="empty-state">
+                  <div class="empty-state-icon">📅</div>
+                  لا توجد أوراد قراءة مجدولة بعد.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== تبويب 3: إدارة الحسابات ==================== -->
+    <div class="teacher-tab-content" id="tab-accounts">
+
+      <div class="teacher-tab-grid">
+        <!-- العمود الأيسر: الفورمات -->
+        <div>
+          <!-- طلاب نقاطي -->
+          <div class="card">
+            <h3 class="card-title">طلاب منظومة نقاطي 🔗</h3>
+            <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.8; margin-bottom: 14px;">
+              قائمة الطلاب تُسحب تلقائياً من <b>نقاطي</b>. يدخل الطالب لمنصة اقرأ باختيار اسمه وكتابة
+              <b>رمز الدخول</b> الظاهر في بوابة القائد بنقاطي. لإضافة طالب أو تعديل اسمه أو رمزه استخدم نقاطي.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button type="button" class="btn btn-primary" onclick="syncNaqatiStudents()">🔄 مزامنة الآن</button>
+              <button type="button" class="btn btn-secondary" onclick="toggleNaqatiCodes()">🔑 عرض رموز الدخول</button>
+            </div>
+            <div id="naqatiCodesList" style="display:none; margin-top: 14px; max-height: 360px; overflow-y: auto;"></div>
+          </div>
+
+          <!-- إدارة نقاط الطالب -->
+          <div class="card">
+            <h3 class="card-title">إدارة نقاط الطالب ⭐</h3>
+            <form id="addPointsForm" onsubmit="return false;">
+              <div class="form-group">
+                <label for="pointsStudentSelect">اختر الطالب</label>
+                <select id="pointsStudentSelect" class="form-control" required>
+                  <option value="">-- اختر طالباً --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="pointsAmount">عدد النقاط</label>
+                <input type="number" id="pointsAmount" class="form-control" min="1" placeholder="مثال: 5" required>
+              </div>
+              <div class="form-group">
+                <label for="pointsReason">السبب (اختياري)</label>
+                <input type="text" id="pointsReason" class="form-control" placeholder="مثال: مشاركة متميزة، تأخر...">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button type="button" onclick="handlePointsAction('add')" class="btn btn-primary" style="background: linear-gradient(135deg, #059669, #10B981);">⭐ إضافة</button>
+                <button type="button" onclick="handlePointsAction('deduct')" class="btn btn-primary" style="background: linear-gradient(135deg, #DC2626, #EF4444);">🔻 خصم</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- إنشاء حساب معلم -->
+          <div class="card">
+            <h3 class="card-title">إنشاء حساب معلم جديد 🎓</h3>
+            <form id="teacherForm" onsubmit="handleCreateTeacher(event)">
+              <div class="form-group">
+                <label for="newTeacherFullName">اسم المعلم الكامل</label>
+                <input type="text" id="newTeacherFullName" class="form-control" placeholder="مثال: أ. محمد أحمد" required autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label for="newTeacherUsername">اسم المستخدم</label>
+                <input type="text" id="newTeacherUsername" class="form-control" placeholder="اختر اسم مستخدم فريد" required autocomplete="username">
+              </div>
+              <div class="form-group">
+                <label for="newTeacherPassword">كلمة المرور</label>
+                <input type="password" id="newTeacherPassword" class="form-control" placeholder="اختر كلمة مرور قوية" required autocomplete="new-password">
+              </div>
+              <button type="submit" class="btn btn-secondary">إنشاء حساب المعلم</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- العمود الأيمن: القوائم -->
+        <div>
+          <!-- قائمة الطلاب -->
+          <div class="card">
+            <h3 class="card-title">طلابي المسجلين 👥</h3>
+            <div class="student-search-box">
+              <input type="text" class="student-search-input" id="studentSearchInput" placeholder="🔍 ابحث عن طالب..." oninput="filterStudentsList()">
+            </div>
+            <div id="studentsListSection">
+              <div class="empty-state">لا يوجد طلاب مسجلين.</div>
+            </div>
+          </div>
+
+          <!-- قائمة المعلمين -->
+          <div class="card">
+            <h3 class="card-title">المعلمين المسجلين 🎓</h3>
+            <div id="teachersListSection">
+              <div class="empty-state">لا يوجد معلمين.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== تبويب 4: إعدادات الكتب ==================== -->
+    <div class="teacher-tab-content" id="tab-settings">
+
+      <!-- الربط مع نقاطي -->
+      <div class="card" id="linkCard" style="margin-bottom: 24px;">
+        <h3 class="card-title" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <span>الربط مع منظومة نقاطي 🔗</span>
+          <span id="linkStatus" style="font-size: 0.85rem; padding: 4px 12px; border-radius: 50px; background: var(--surface);">⏳ جاري الفحص...</span>
+        </h3>
+        <form id="linkForm" onsubmit="saveLinkSettings(event)">
+          <label style="display:flex; align-items:center; gap:10px; margin-bottom: 14px; cursor:pointer; font-weight:700;">
+            <input type="checkbox" id="linkEnabled" style="width:20px; height:20px;">
+            إرسال نقاط الأوراد تلقائياً إلى نقاطي
+          </label>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            <div class="form-group">
+              <label for="linkOnTime">✅ تسليم في وقته</label>
+              <input type="number" id="linkOnTime" class="form-control" step="1">
+            </div>
+            <div class="form-group">
+              <label for="linkLate">⏰ متأخر يوم</label>
+              <input type="number" id="linkLate" class="form-control" step="1">
+            </div>
+            <div class="form-group">
+              <label for="linkOverdue">⌛ متأخر أكثر</label>
+              <input type="number" id="linkOverdue" class="form-control" step="1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="linkCriteria">اسم البند كما يظهر في سجل نقاطي</label>
+            <input type="text" id="linkCriteria" class="form-control" placeholder="📖 ورد القراءة (اقرأ)">
+          </div>
+          <label style="display:flex; align-items:center; gap:10px; margin-bottom: 14px; cursor:pointer;">
+            <input type="checkbox" id="linkManual" style="width:20px; height:20px;">
+            إرسال النقاط اليدوية (إضافة/خصم من تبويب الحسابات) إلى نقاطي أيضاً
+          </label>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            <div class="form-group">
+              <label for="linkNaqatiUrl">رابط موقع نقاطي</label>
+              <input type="text" id="linkNaqatiUrl" class="form-control" placeholder="https://....vercel.app" dir="ltr">
+            </div>
+            <div class="form-group">
+              <label for="linkIqraUrl">رابط موقع اقرأ</label>
+              <input type="text" id="linkIqraUrl" class="form-control" placeholder="https://....vercel.app" dir="ltr">
+            </div>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+            💡 الروابط تُسجَّل تلقائياً عند فتح كل موقع، وتُستخدم لأزرار الانتقال بين الموقعين. ضع 0 لأي حالة لا تريد لها نقاطاً.
+          </p>
+          <button type="submit" class="btn btn-primary">💾 حفظ إعدادات الربط</button>
+        </form>
+      </div>
+
+      <div class="teacher-tab-grid">
+        <!-- تعديل أسماء الكتب -->
+        <div class="card">
+          <h3 class="card-title">تعديل أسماء الكتب ✏️</h3>
+          <form id="renameBookForm" onsubmit="handleRenameBook(event)">
+            <div class="form-group">
+              <label for="oldBookName">اختر الكتاب</label>
+              <select id="oldBookName" class="form-control" required>
+                <option value="">-- اختر كتاباً --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="newBookName">الاسم الجديد</label>
+              <input type="text" id="newBookName" class="form-control" placeholder="أدخل الاسم الجديد للكتاب" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent), #F59E0B);">✏️ تعديل الاسم</button>
+          </form>
+        </div>
+
+        <!-- تعيين صورة غلاف الكتاب -->
+        <div class="card">
+          <h3 class="card-title">صورة غلاف الكتاب 🖼️</h3>
+          <div>
+            <div class="form-group">
+              <label for="imageBookName">اختر الكتاب</label>
+              <select id="imageBookName" class="form-control">
+                <option value="">-- اختر كتاباً --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>اختر صورة الغلاف</label>
+              <label for="bookImageFile" class="file-upload-area" id="fileUploadArea">
+                <span class="file-upload-icon">📷</span>
+                <span class="file-upload-text" id="fileUploadText">اضغط لاختيار صورة من الألبوم</span>
+                <input type="file" id="bookImageFile" accept="image/*" style="display: none;" onchange="previewBookImage(this)">
+              </label>
+            </div>
+            <div id="bookImagePreview" style="display:none; margin-bottom: 14px; text-align: center;">
+              <img id="bookImagePreviewImg" src="" alt="معاينة" style="max-width: 100%; max-height: 180px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            </div>
+            <button type="button" onclick="handleSetBookImage()" class="btn btn-primary" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);">🖼️ تعيين الصورة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== تبويب: الرسائل والمحادثات ==================== -->
+    <div class="teacher-tab-content" id="tab-messages">
+      <div class="card" style="padding: 18px 24px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span>💬 المحادثات والرسائل المباشرة مع الطلاب</span>
+              <span id="unreadMessagesHeaderBadge" class="user-badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-size: 0.85rem; display:none;">0 رسائل جديدة</span>
+            </h3>
+            <p style="margin: 6px 0 0; color: var(--text-muted); font-size: 0.88rem;">
+              تواصل مباشرة مع طلابك، أرسل التوجيهات الفردية والملاحظات، ورد على استفساراتهم لحظياً.
+            </p>
+          </div>
+          <button onclick="loadTeacherConversations()" class="btn btn-secondary" style="width: auto; padding: 8px 16px; font-size: 0.88rem;">
+            🔄 تحديث المحادثات
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-container" id="teacherChatContainer">
+        <!-- القائمة الجانبية للمحادثات -->
+        <div class="chat-sidebar">
+          <div class="chat-sidebar-header">
+            <input type="text" id="chatContactSearch" class="chat-search-input" placeholder="🔍 ابحث عن طالب..." oninput="filterChatContacts()">
+          </div>
+          <div class="chat-contacts-list" id="chatContactsList">
+            <div class="empty-state" style="padding: 20px;">جاري تحميل المحادثات...</div>
+          </div>
+        </div>
+
+        <!-- الشات النشط -->
+        <div class="chat-main" id="chatMainArea">
+          <div class="chat-main-empty" id="chatMainEmpty">
+            <div style="font-size: 3.5rem; margin-bottom: 12px;">💬</div>
+            <h3 style="margin-bottom: 8px; color: var(--text-main);">اختر طالباً لبدء المحادثة</h3>
+            <p style="color: var(--text-muted); max-width: 380px;">اختر أي طالب من القائمة الجانبية لإرسال رسائل أو توجيهات فورية له.</p>
+          </div>
+
+          <div class="chat-main-active" id="chatMainActive" style="display: none; flex-direction: column; height: 100%;">
+            <!-- رأس المحادثة -->
+            <div class="chat-main-header">
+              <div class="chat-header-user">
+                <button class="chat-back-btn" onclick="closeActiveChatMobile()" title="رجوع للقائمة">←</button>
+                <div class="chat-contact-avatar" id="activeChatAvatar">ط</div>
+                <div>
+                  <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);" id="activeChatName">اسم الطالب</div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);" id="activeChatRole">طالب</div>
+                </div>
+              </div>
+              <div id="activeChatExtra"></div>
+            </div>
+
+            <!-- سجل الرسائل -->
+            <div class="chat-messages-body" id="chatMessagesBody">
+              <div class="empty-state">جاري تحميل الرسائل...</div>
+            </div>
+
+            <!-- كتابة الرسالة -->
+            <div class="chat-footer">
+              <div class="chat-quick-replies">
+                <button type="button" class="chat-quick-chip" onclick="insertQuickReply('أحسنت يا بطل، واصل تميزك! 🌟')">🌟 أحسنت يا بطل</button>
+                <button type="button" class="chat-quick-chip" onclick="insertQuickReply('تذكير بقراءة ورد اليوم بارك الله فيك 📖')">📖 تذكير بالورد</button>
+                <button type="button" class="chat-quick-chip" onclick="insertQuickReply('تم الاطلاع وتصحيح النقاط بنجاح ✨')">✨ تم التصحيح</button>
+                <button type="button" class="chat-quick-chip" onclick="insertQuickReply('ما شاء الله، همة عالية مباركة! 👏')">👏 همة مباركة</button>
+              </div>
+              <form id="chatSendForm" onsubmit="handleSendTeacherMessage(event)" class="chat-input-row">
+                <textarea id="chatMessageInput" class="chat-textarea" placeholder="اكتب رسالتك للطالب هنا... (اضغط Enter للإرسال)" rows="1" onkeydown="handleChatInputKeydown(event)"></textarea>
+                <button type="submit" id="btnSendChat" class="btn-chat-send">
+                  <span>إرسال</span> <span>🚀</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== تبويب 5: الاقتراحات والملاحظات ==================== -->
+    <div class="teacher-tab-content" id="tab-feedback">
+      
+      <!-- هيدر صندوق الاقتراحات -->
+      <div class="card" style="padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span>💡 صندوق الاقتراحات والملاحظات</span>
+              <span id="feedbackTotalBadge" class="user-badge" style="background: rgba(217, 119, 6, 0.15); color: var(--accent); font-size: 0.85rem;">0 ملاحظة</span>
+            </h3>
+            <p style="margin: 6px 0 0; color: var(--text-muted); font-size: 0.9rem;">
+              جميع الاقتراحات، طلبات التحسين، والتبليغات المرسلة من الطلاب والمعلمين للمبرمج والمنصة.
+            </p>
+          </div>
+          
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="loadTeacherFeedbacks()" class="btn btn-secondary" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">
+              🔄 تحديث القائمة
+            </button>
+            <button onclick="openDevContactModal()" class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.9rem; background: linear-gradient(135deg, var(--accent), #F59E0B);">
+              ✨ إرسال اقتراح جديد
+            </button>
+          </div>
+        </div>
+
+        <!-- فلاتر والبحث -->
+        <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1; min-width: 220px;">
+            <input type="text" id="feedbackSearchInput" oninput="filterFeedbackList()" placeholder="🔍 ابحث في الاقتراحات أو أسماء المرسلين..." class="form-control">
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="feedbackFilterButtons">
+            <button class="stat-filter-btn active" id="fbFilterAll" onclick="setFeedbackFilter('all')">الكل</button>
+            <button class="stat-filter-btn" id="fbFilterStudents" onclick="setFeedbackFilter('student')">👨‍🎓 الطلاب</button>
+            <button class="stat-filter-btn" id="fbFilterTeachers" onclick="setFeedbackFilter('teacher')">👨‍🏫 المعلمون</button>
+            <button class="stat-filter-btn" id="fbFilterIdeas" onclick="setFeedbackFilter('idea')">💡 أفكار ومقترحات</button>
+            <button class="stat-filter-btn" id="fbFilterBugs" onclick="setFeedbackFilter('bug')">🐛 مشاكل فنية</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- قائمة الملاحظات والاقتراحات -->
+      <div id="feedbackListContainer">
+        <div class="empty-state">
+          <div class="empty-state-icon">⏳</div>
+          جاري تحميل الاقتراحات والملاحظات...
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- Footer -->
+  <footer class="student-footer" style="margin-top: 40px; padding: 20px; text-align: center; border-top: 1px solid var(--border);">
+    <p>📚 لوحة إدارة المعلم — منصة اقرأ لتتبع القراءة</p>
+    <p style="margin-top: 10px;">
+      <button type="button" class="btn-dev-contact" onclick="openDevContactModal()">
+        <span>💡</span> <span>تواصل مع المبرمج للاقتراحات والملاحظات</span>
+      </button>
+    </p>
+  </footer>
+
+  <script src="js/auth.js?v=2.0"></script>
+  <script src="js/contact-dev.js?v=2.0"></script>
+  <script src="js/teacher.js?v=2.0"></script>
+</body>
+</html>
+
+

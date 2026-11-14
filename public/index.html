@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اقرأ | تسجيل الدخول</title>
+  <link rel="icon" type="image/jpeg" href="favicon.jpeg">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pin-input-wrap {
+      position: relative;
+    }
+    .pin-input {
+      width: 100%;
+      letter-spacing: 0.6rem;
+      font-size: 1.6rem;
+      text-align: center;
+      font-weight: 900;
+      font-family: monospace;
+      padding: 0.6rem 1rem;
+    }
+    .pin-hint {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      text-align: right;
+    }
+    .btn-submit-main {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="#" class="logo">
+        <img src="favicon.jpeg" alt="اقرأ" class="logo-icon" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+        <span>اقرأ</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>أهلاً بك في منصة اقرأ</h2>
+        <p>تابع ورد قراءتك اليومي وارتقِ بمعرفتك</p>
+      </div>
+
+      <div id="authAlert" class="alert"></div>
+
+      <!-- Tab Buttons -->
+      <div class="tabs">
+        <button id="tabStudent" class="tab-btn active" onclick="switchTab('student')">👨‍🎓 دخول الطالب</button>
+        <button id="tabLogin" class="tab-btn" onclick="switchTab('login')">🎓 دخول المعلم</button>
+      </div>
+
+      <!-- Student Login Form (مطابق لبوابة الطالب في نقاطي) -->
+      <form id="studentLoginForm" onsubmit="handleStudentLogin(event)">
+        <div class="form-group">
+          <label for="loginClassSelect">🏫 الحلقة القرآنية:</label>
+          <select id="loginClassSelect" class="form-control" onchange="onClassChange()" required>
+            <option value="">⏳ جاري تحميل الحلقات من نقاطي...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="loginStudentSelect">👨‍🎓 اسم الطالب:</label>
+          <select id="loginStudentSelect" class="form-control" required>
+            <option value="">اختر الحلقة أولاً</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPinInput">🔒 رمز الدخول (رقمين):</label>
+          <div class="pin-input-wrap">
+            <input type="password" id="loginPinInput" class="form-control pin-input" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="••" autocomplete="off" required>
+          </div>
+          <small class="pin-hint">
+            💡 الرمز تم تزويدك به من قِبل معلم الحلقة في نقاطي (مكون من رقمين)
+          </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-submit-main">دخول للمنصة ⬅️</button>
+
+        <p style="text-align: center; margin-top: 14px; font-size: 0.88rem; color: var(--text-muted);">
+          🔗 الحساب مرتبط بمنظومة <b>نقاطي</b> — نقاط قراءتك تُضاف لرصيدك هناك تلقائياً
+        </p>
+        <p id="naqatiLinkWrap" style="text-align: center; margin-top: 6px; display: none;">
+          <a id="naqatiLink" href="#" target="_blank" style="font-weight: 700;">⭐ الانتقال إلى نقاطي</a>
+        </p>
+      </form>
+
+      <!-- Teacher Login Form (كما هو) -->
+      <form id="loginForm" onsubmit="handleLogin(event)" style="display: none;">
+        <div class="form-group">
+          <label for="loginUsername">اسم المستخدم</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="أدخل اسم المستخدم" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">كلمة المرور</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="أدخل كلمة المرور" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-submit-main">دخول للمنصة</button>
+      </form>
+
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script>
+    let naqatiStudents = [];
+    let classesList = [];
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // دخول تلقائي عند القدوم من بوابة الطالب في نقاطي: index.html#nq=<id>&pin=<code>
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      const autoId = hash.get('nq');
+      const autoPin = hash.get('pin');
+      if (autoId && autoPin) {
+        history.replaceState(null, '', window.location.pathname);
+        const ok = await studentLogin(autoId, autoPin, true);
+        if (ok) return;
+      }
+
+      // توجيه تلقائي إذا كان المستخدم مسجل دخوله مسبقاً
+      const user = getUser();
+      if (user && !autoId) {
+        window.location.href = user.role === 'teacher' ? 'teacher.html' : 'student.html';
+        return;
+      }
+
+      await loadNaqatiStudents(autoId);
+      loadLinkInfo();
+    });
+
+    async function loadLinkInfo() {
+      try {
+        const r = await fetch(`${API_BASE}/link-info`);
+        const d = await r.json();
+        if (d.naqatiUrl) {
+          document.getElementById('naqatiLink').href = d.naqatiUrl + '/student.html';
+          document.getElementById('naqatiLinkWrap').style.display = 'block';
+        }
+      } catch (e) {}
+    }
+
+    async function loadNaqatiStudents(preselectId) {
+      const classSel = document.getElementById('loginClassSelect');
+      const studentSel = document.getElementById('loginStudentSelect');
+      try {
+        const r = await fetch(`${API_BASE}/auth/naqati-students`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'فشل جلب البيانات');
+        naqatiStudents = d.students || [];
+
+        // تجميع الحلقات القرآنية من قائمة الطلاب
+        const classMap = new Map();
+        naqatiStudents.forEach(s => {
+          const cId = s.classId || s.className || 'default';
+          const cName = s.className || 'عامة';
+          if (!classMap.has(cId)) {
+            classMap.set(cId, { id: cId, name: cName });
+          }
+        });
+        classesList = Array.from(classMap.values());
+
+        if (classesList.length === 0) {
+          classSel.innerHTML = '<option value="">لا توجد حلقات حالياً</option>';
+          studentSel.innerHTML = '<option value="">لا يوجد طلاب</option>';
+          return;
+        }
+
+        // اختيار الحلقة المحفوظة في localStorage إن وجدت
+        const savedClassId = localStorage.getItem('naqati_student_class_id');
+        let matched = false;
+
+        classSel.innerHTML = classesList.map(c => {
+          const isSel = savedClassId && c.id === savedClassId;
+          if (isSel) matched = true;
+          return `<option value="${escapeAttr(c.id)}" ${isSel ? 'selected' : ''}>${escapeAttr(c.name)}</option>`;
+        }).join('');
+
+        // إذا كان هناك طالب محدد مسبقاً (عبر الرابط مثلاً) نحدد حلقته
+        if (preselectId) {
+          const found = naqatiStudents.find(s => s.id === preselectId);
+          if (found) {
+            const foundClassId = found.classId || found.className || 'default';
+            classSel.value = foundClassId;
+            matched = true;
+          }
+        }
+
+        const activeClassId = matched ? classSel.value : classesList[0].id;
+        classSel.value = activeClassId;
+        populateStudentsForClass(activeClassId, preselectId);
+
+      } catch (e) {
+        classSel.innerHTML = `<option value="">⚠️ ${e.message || 'تعذر تحميل الحلقات'}</option>`;
+        studentSel.innerHTML = '<option value="">تعذر تحميل الطلاب</option>';
+      }
+    }
+
+    function onClassChange() {
+      const classId = document.getElementById('loginClassSelect').value;
+      localStorage.setItem('naqati_student_class_id', classId);
+      populateStudentsForClass(classId);
+    }
+
+    function populateStudentsForClass(classId, preselectId) {
+      const studentSel = document.getElementById('loginStudentSelect');
+      const filtered = naqatiStudents
+        .filter(s => (s.classId || s.className || 'default') === classId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+      if (filtered.length === 0) {
+        studentSel.innerHTML = '<option value="">لا يوجد طلاب في هذه الحلقة</option>';
+        return;
+      }
+
+      studentSel.innerHTML = filtered.map(s =>
+        `<option value="${escapeAttr(s.id)}" ${preselectId && s.id === preselectId ? 'selected' : ''}>${escapeAttr((s.avatar || '👨‍🎓') + ' ' + s.name)}</option>`
+      ).join('');
+
+      if (preselectId && filtered.some(s => s.id === preselectId)) {
+        studentSel.value = preselectId;
+      }
+    }
+
+    function escapeAttr(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function studentLogin(studentId, passcode, silent) {
+      try {
+        const response = await fetch(`${API_BASE}/auth/student-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId, passcode })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'فشل تسجيل الدخول');
+        setSession(data.token, data.user);
+        window.location.href = 'student.html';
+        return true;
+      } catch (error) {
+        if (!silent) showAlert('authAlert', error.message, 'danger');
+        return false;
+      }
+    }
+
+    function handleStudentLogin(e) {
+      e.preventDefault();
+      const studentId = document.getElementById('loginStudentSelect').value;
+      const pin = document.getElementById('loginPinInput').value.trim();
+
+      if (!studentId) {
+        showAlert('authAlert', 'يرجى اختيار اسم الطالب', 'danger');
+        return;
+      }
+      if (pin.length < 2) {
+        showAlert('authAlert', 'يرجى إدخال رمز الدخول المكون من رقمين', 'danger');
+        document.getElementById('loginPinInput').focus();
+        return;
+      }
+
+      studentLogin(studentId, pin, false);
+    }
+
+    function switchTab(tab) {
+      const isStudent = tab === 'student';
+      document.getElementById('authAlert').style.display = 'none';
+      document.getElementById('studentLoginForm').style.display = isStudent ? 'block' : 'none';
+      document.getElementById('loginForm').style.display = isStudent ? 'none' : 'block';
+      document.getElementById('tabStudent').classList.toggle('active', isStudent);
+      document.getElementById('tabLogin').classList.toggle('active', !isStudent);
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'فشل تسجيل الدخول');
+
+        setSession(data.token, data.user);
+        window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+      } catch (error) {
+        showAlert('authAlert', error.message, 'danger');
+      }
+    }
+  </script>
+</body>
+</html>
