@@ -11,6 +11,7 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+const naqati = require('./naqati');
 
 // --- USER OPERATIONS ---
 
@@ -275,9 +276,13 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
   // جلب بيانات الورد لحساب النقاط
   const { data: assignment } = await supabase
     .from('assignments')
-    .select('target_date')
+    .select('target_date, book_name, start_page, end_page')
     .eq('id', assignmentId)
     .single();
+
+  // قيم النقاط قابلة للتعديل من إعدادات الربط مع نقاطي
+  let linkSettings = naqati.DEFAULT_SETTINGS;
+  try { linkSettings = await naqati.getSettings(); } catch (e) { console.warn('Naqati settings unavailable:', e.message); }
 
   if (!assignment) throw new Error('الورد غير موجود');
 
@@ -298,15 +303,15 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
   if (isCompleted) {
     if (diffDays <= 0) {
       // اليوم الأول (نفس اليوم أو قبله)
-      pointsToAward = 10;
+      pointsToAward = linkSettings.onTimePoints;
       isLate = false;
     } else if (diffDays === 1) {
-      // اليوم الثاني (متأخر - 5 نقاط)
-      pointsToAward = 5;
+      // اليوم الثاني (متأخر)
+      pointsToAward = linkSettings.latePoints;
       isLate = true;
     } else {
-      // بعد يومين (فائت - بدون نقاط)
-      pointsToAward = 0;
+      // بعد يومين (فائت)
+      pointsToAward = linkSettings.overduePoints;
       isLate = true;
     }
   }
@@ -373,9 +378,115 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
       .from('users')
       .update({ points: newPoints })
       .eq('id', studentId);
+
+    // إرسال الفرق إلى سجل نقاط الطالب في نقاطي
+    if (linkSettings.enabled) {
+      const pages = assignment.start_page && assignment.end_page ? ` (ص ${assignment.start_page}-${assignment.end_page})` : '';
+      const note = `${assignment.book_name || 'ورد قراءة'}${pages}${isLate ? ' - تسليم متأخر' : ''}${pointsDiff < 0 ? ' - تعديل' : ''}`;
+      await pushPointsToNaqati(studentId, pointsDiff, linkSettings.criteriaName, note);
+    }
   }
 
   return mapSubmissionKeys(submissionData);
+}
+
+// --- الربط مع نقاطي ---
+const NQ_PREFIX = 'nq_';
+
+function naqatiIdFromUsername(username) {
+  return username && username.startsWith(NQ_PREFIX) ? username.slice(NQ_PREFIX.length) : null;
+}
+
+async function pushPointsToNaqati(ya2StudentId, points, criteriaName, note) {
+  try {
+    const { data: u } = await supabase.from('users').select('username').eq('id', ya2StudentId).single();
+    const nqId = naqatiIdFromUsername(u && u.username);
+    if (!nqId) return false;
+    return await naqati.addPoints(nqId, points, criteriaName, note);
+  } catch (e) {
+    console.error('Naqati push failed:', e.message);
+    return false;
+  }
+}
+
+function randomPasswordHash() {
+  return bcrypt.hashSync(require('crypto').randomBytes(16).toString('hex'), 8);
+}
+
+// إنشاء/تحديث حساب الطالب في اقرأ بناءً على بياناته في نقاطي
+async function ensureNaqatiUser(nqStudent) {
+  const username = NQ_PREFIX + nqStudent.id;
+  const { data: existing } = await supabase.from('users').select('*').eq('username', username).maybeSingle();
+  if (existing) {
+    if (existing.full_name !== nqStudent.name || !existing.is_approved) {
+      const { data } = await supabase.from('users')
+        .update({ full_name: nqStudent.name, is_approved: true })
+        .eq('id', existing.id).select().single();
+      const { password: _, ...rest } = data || existing;
+      return mapUserKeys(rest);
+    }
+    const { password: _, ...rest } = existing;
+    return mapUserKeys(rest);
+  }
+  const { data, error } = await supabase.from('users').insert([{
+    full_name: nqStudent.name,
+    username,
+    password: randomPasswordHash(),
+    role: 'student',
+    teacher_id: null,
+    is_approved: true,
+    points: 0
+  }]).select().single();
+  if (error) throw new Error(error.message);
+  const { password: _, ...rest } = data;
+  return mapUserKeys(rest);
+}
+
+// مزامنة قائمة الطلاب بالكامل من نقاطي (إضافة الجدد، تحديث الأسماء، حذف المحذوفين)
+let lastSyncAt = 0;
+async function syncStudentsFromNaqati({ force = false } = {}) {
+  if (!force && Date.now() - lastSyncAt < 60000) return null;
+  lastSyncAt = Date.now();
+
+  const nqStudents = await naqati.listStudents();
+  const { data: localStudents, error } = await supabase
+    .from('users').select('id, username, full_name, is_approved').eq('role', 'student');
+  if (error) throw new Error(error.message);
+
+  const byUsername = new Map((localStudents || []).map(u => [u.username, u]));
+  const wanted = new Set();
+  let added = 0, updated = 0, removed = 0;
+
+  const toInsert = [];
+  for (const st of nqStudents) {
+    const username = NQ_PREFIX + st.id;
+    wanted.add(username);
+    const local = byUsername.get(username);
+    if (!local) {
+      toInsert.push({ full_name: st.name, username, password: randomPasswordHash(), role: 'student', teacher_id: null, is_approved: true, points: 0 });
+    } else if (local.full_name !== st.name || !local.is_approved) {
+      await supabase.from('users').update({ full_name: st.name, is_approved: true }).eq('id', local.id);
+      updated++;
+    }
+  }
+  if (toInsert.length) {
+    const { error: insErr } = await supabase.from('users').insert(toInsert);
+    if (insErr) throw new Error(insErr.message);
+    added = toInsert.length;
+  }
+
+  // حذف الطلاب غير الموجودين في نقاطي (فقط إذا وصلتنا قائمة صالحة)
+  if (nqStudents.length > 0) {
+    const stale = (localStudents || []).filter(u => !wanted.has(u.username));
+    for (const u of stale) {
+      await supabase.from('submissions').delete().eq('student_id', u.id);
+      await supabase.from('messages').delete().or(`sender_id.eq.${u.id},receiver_id.eq.${u.id}`);
+      await supabase.from('users').delete().eq('id', u.id);
+      removed++;
+    }
+  }
+
+  return { total: nqStudents.length, added, updated, removed };
 }
 
 // جلب جميع التسليمات للوحة المعلم (مشترك بين جميع المعلمين)
@@ -451,7 +562,16 @@ async function addBonusPoints(studentId, points, reason = '') {
 
   if (updateErr) throw new Error('حدث خطأ أثناء تحديث النقاط');
 
-  return { studentId, fullName: student.full_name, newPoints, pointsAdded: points };
+  // إرسال النقاط اليدوية إلى نقاطي (إذا كان الخيار مفعلاً)
+  let syncedToNaqati = false;
+  try {
+    const s = await naqati.getSettings();
+    if (s.enabled && s.syncManualPoints) {
+      syncedToNaqati = await pushPointsToNaqati(studentId, points, s.criteriaName, reason ? reason : (points > 0 ? 'نقاط من معلم اقرأ' : 'خصم من معلم اقرأ'));
+    }
+  } catch (e) { console.warn('Naqati manual sync skipped:', e.message); }
+
+  return { studentId, fullName: student.full_name, newPoints, pointsAdded: points, syncedToNaqati };
 }
 
 // جلب نقاط الطالب
@@ -1181,7 +1301,11 @@ module.exports = {
   getUnreadMessagesCount,
   getConversationsList,
   deleteMessage,
-  clearChatHistory
+  clearChatHistory,
+  ensureNaqatiUser,
+  syncStudentsFromNaqati,
+  naqatiIdFromUsername,
+  supabase
 };
 
 

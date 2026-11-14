@@ -3,6 +3,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const db = require('./database');
+const naqati = require('./naqati');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +13,13 @@ const JWT_SECRET = 'ya2_reading_tracker_super_secret_key_12345';
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// تسجيل رابط موقع اقرأ تلقائياً لتظهر أزرار الانتقال داخل نقاطي
+app.use((req, res, next) => {
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  if (host) naqati.registerIqraUrl(`${req.headers['x-forwarded-proto'] || 'https'}://${host}`);
+  next();
+});
 
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -52,23 +60,56 @@ function requireStudent(req, res, next) {
 
 // --- AUTHENTICATION APIS ---
 
-// تسجيل طالب جديد (بانتظار موافقة المعلم)
-app.post('/api/auth/register-student', async (req, res) => {
-  const { fullName, username, password } = req.body;
+// تسجيل الطلاب الذاتي متوقف: الطلاب يُدارون من منظومة نقاطي
+app.post('/api/auth/register-student', (req, res) => {
+  res.status(410).json({ error: 'التسجيل يتم من منظومة نقاطي. ادخل باسمك ورمز الدخول الظاهر عند القائد.' });
+});
 
-  if (!fullName || !username || !password) {
-    return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
-  }
-
+// قائمة الطلاب من نقاطي لشاشة دخول الطالب (بدون رموز الدخول)
+app.get('/api/auth/naqati-students', async (req, res) => {
   try {
-    const user = await db.registerStudent(fullName, username, password);
-    res.status(201).json({ message: 'تم تسجيل حسابك بنجاح! بانتظار موافقة المعلم.', user });
+    const students = await naqati.listStudents();
+    res.json({ students: students.map(s => ({ id: s.id, name: s.name, className: s.className, avatar: s.avatar })) });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('naqati-students error:', error.message);
+    res.status(503).json({ error: 'تعذر الاتصال بمنظومة نقاطي حالياً' });
   }
 });
 
-// Login (Both Teacher and Student)
+// دخول الطالب بالاسم + رمز الدخول من نقاطي
+app.post('/api/auth/student-login', async (req, res) => {
+  const { studentId, passcode } = req.body || {};
+  if (!studentId || !passcode) {
+    return res.status(400).json({ error: 'اختر اسمك وأدخل رمز الدخول' });
+  }
+  try {
+    const nq = await naqati.verifyStudent(studentId, passcode);
+    if (!nq) return res.status(401).json({ error: 'رمز الدخول غير صحيح' });
+
+    const user = await db.ensureNaqatiUser(nq);
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: 'student', fullName: user.fullName, naqatiId: nq.id },
+      JWT_SECRET,
+      { expiresIn: '365d' }
+    );
+    res.json({ message: 'تم تسجيل الدخول بنجاح', token, user });
+  } catch (error) {
+    console.error('student-login error:', error.message);
+    res.status(503).json({ error: 'تعذر التحقق من الرمز حالياً، حاول مرة أخرى' });
+  }
+});
+
+// روابط الموقعين (للأزرار المتبادلة)
+app.get('/api/link-info', async (req, res) => {
+  try {
+    const s = await naqati.getSettings();
+    res.json({ naqatiUrl: s.naqatiUrl, iqraUrl: s.iqraUrl });
+  } catch (e) {
+    res.json({ naqatiUrl: '', iqraUrl: '' });
+  }
+});
+
+// Login (Teacher accounts — students log in via /api/auth/student-login)
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -165,9 +206,10 @@ app.post('/api/teacher/reject-student', authenticateToken, requireTeacher, async
   }
 });
 
-// Get Students of Teacher (now shows ALL students)
+// Get Students of Teacher (synced from Naqati)
 app.get('/api/teacher/students', authenticateToken, requireTeacher, async (req, res) => {
   try {
+    try { await db.syncStudentsFromNaqati(); } catch (e) { console.warn('Naqati sync skipped:', e.message); }
     const students = await db.getStudentsForTeacher(req.user.id);
     res.json({ students });
   } catch (error) {
@@ -175,19 +217,47 @@ app.get('/api/teacher/students', authenticateToken, requireTeacher, async (req, 
   }
 });
 
-// Create Student Account by Teacher (معتمد مباشرة)
-app.post('/api/teacher/students', authenticateToken, requireTeacher, async (req, res) => {
-  const { fullName, username, password } = req.body;
+// إنشاء الطلاب يتم من نقاطي
+app.post('/api/teacher/students', authenticateToken, requireTeacher, (req, res) => {
+  res.status(410).json({ error: 'إضافة الطلاب تتم من منظومة نقاطي، وتظهر هنا تلقائياً.' });
+});
 
-  if (!fullName || !username || !password) {
-    return res.status(400).json({ error: 'جميع الحقول مطلوبة لإنشاء حساب الطالب' });
-  }
-
+// --- إعدادات الربط مع نقاطي ---
+app.get('/api/teacher/integration', authenticateToken, requireTeacher, async (req, res) => {
   try {
-    const student = await db.createUser(fullName, username, password, 'student', req.user.id);
-    res.status(201).json({ message: 'تم إنشاء حساب الطالب بنجاح', student });
+    const settings = await naqati.getSettings(true);
+    let studentsCount = null, connected = true;
+    try { studentsCount = await naqati.ping(); } catch (e) { connected = false; }
+    res.json({ settings, connected, studentsCount });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(503).json({ error: 'تعذر الاتصال بمنظومة نقاطي: ' + error.message });
+  }
+});
+
+app.put('/api/teacher/integration', authenticateToken, requireTeacher, async (req, res) => {
+  try {
+    const settings = await naqati.saveSettings(req.body || {});
+    res.json({ message: 'تم حفظ إعدادات الربط بنجاح ✅', settings });
+  } catch (error) {
+    res.status(400).json({ error: 'تعذر حفظ الإعدادات: ' + error.message });
+  }
+});
+
+app.post('/api/teacher/integration/sync', authenticateToken, requireTeacher, async (req, res) => {
+  try {
+    const r = await db.syncStudentsFromNaqati({ force: true });
+    res.json({ message: `تمت المزامنة: ${r.total} طالب في نقاطي (جديد ${r.added}، محدّث ${r.updated}، محذوف ${r.removed})`, result: r });
+  } catch (error) {
+    res.status(503).json({ error: 'فشلت المزامنة: ' + error.message });
+  }
+});
+
+// قائمة الطلاب مع رموز الدخول (للمعلم فقط)
+app.get('/api/teacher/naqati-codes', authenticateToken, requireTeacher, async (req, res) => {
+  try {
+    res.json({ students: await naqati.listStudents() });
+  } catch (error) {
+    res.status(503).json({ error: 'تعذر الاتصال بمنظومة نقاطي' });
   }
 });
 
@@ -229,7 +299,7 @@ app.get('/api/teacher/submissions', authenticateToken, requireTeacher, async (re
 
 // إضافة نقاط يدوياً للطالب
 app.post('/api/teacher/add-points', authenticateToken, requireTeacher, async (req, res) => {
-  const { studentId, points } = req.body;
+  const { studentId, points, reason } = req.body;
 
   if (!studentId || points === undefined || points === null) {
     return res.status(400).json({ error: 'معرف الطالب وعدد النقاط مطلوبة' });
@@ -241,10 +311,10 @@ app.post('/api/teacher/add-points', authenticateToken, requireTeacher, async (re
   }
 
   try {
-    const result = await db.addBonusPoints(studentId, pointsNum);
+    const result = await db.addBonusPoints(studentId, pointsNum, (reason || '').trim());
     const action = pointsNum > 0 ? 'إضافة' : 'خصم';
     res.json({
-      message: `تم ${action} ${Math.abs(pointsNum)} نقطة ${pointsNum > 0 ? 'إلى' : 'من'} "${result.fullName}". الرصيد الجديد: ${result.newPoints} نقطة`,
+      message: `تم ${action} ${Math.abs(pointsNum)} نقطة ${pointsNum > 0 ? 'إلى' : 'من'} "${result.fullName}". الرصيد الجديد: ${result.newPoints} نقطة${result.syncedToNaqati ? ' — وتم تسجيلها في نقاطي ✅' : ''}`,
       result
     });
   } catch (error) {

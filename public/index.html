@@ -31,12 +31,36 @@
 
       <!-- Tab Buttons -->
       <div class="tabs">
-        <button id="tabLogin" class="tab-btn active" onclick="switchTab('login')">تسجيل الدخول</button>
-        <button id="tabRegister" class="tab-btn" onclick="switchTab('register')">تسجيل طالب جديد</button>
+        <button id="tabStudent" class="tab-btn active" onclick="switchTab('student')">👨‍🎓 دخول الطالب</button>
+        <button id="tabLogin" class="tab-btn" onclick="switchTab('login')">🎓 دخول المعلم</button>
       </div>
 
-      <!-- Login Form -->
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <!-- Student Login (from Naqati) -->
+      <form id="studentLoginForm" onsubmit="handleStudentLogin(event)">
+        <div class="form-group">
+          <label for="studentSearch">اسم الطالب</label>
+          <input type="text" id="studentSearch" class="form-control" placeholder="🔍 اكتب جزءاً من اسمك" oninput="renderStudentOptions()" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <select id="studentSelect" class="form-control" required size="5" style="height: auto; min-height: 150px;">
+            <option value="">⏳ جاري تحميل الأسماء من نقاطي...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="studentPin">رمز الدخول</label>
+          <input type="password" id="studentPin" class="form-control" placeholder="الرمز الظاهر عند القائد في نقاطي" inputmode="numeric" required autocomplete="off" style="text-align: center; font-size: 1.3rem; letter-spacing: 6px;">
+        </div>
+        <button type="submit" class="btn btn-primary">دخول للمنصة</button>
+        <p style="text-align: center; margin-top: 12px; font-size: 0.88rem; color: var(--text-muted);">
+          🔗 الحساب مرتبط بمنظومة <b>نقاطي</b> — نقاط قراءتك تُضاف لرصيدك هناك تلقائياً
+        </p>
+        <p id="naqatiLinkWrap" style="text-align: center; margin-top: 6px; display: none;">
+          <a id="naqatiLink" href="#" target="_blank" style="font-weight: 700;">⭐ الانتقال إلى نقاطي</a>
+        </p>
+      </form>
+
+      <!-- Teacher Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)" style="display: none;">
         <div class="form-group">
           <label for="loginUsername">اسم المستخدم</label>
           <input type="text" id="loginUsername" class="form-control" placeholder="أدخل اسم المستخدم" required autocomplete="username">
@@ -48,65 +72,122 @@
         <button type="submit" class="btn btn-primary">دخول للمنصة</button>
       </form>
 
-      <!-- Student Register Form -->
-      <form id="registerForm" onsubmit="handleRegister(event)" style="display: none;">
-        <div class="form-group">
-          <label for="regFullName">الاسم الكامل للطالب</label>
-          <input type="text" id="regFullName" class="form-control" placeholder="مثال: عمر بن عبد العزيز" required autocomplete="name">
-        </div>
-        <div class="form-group">
-          <label for="regUsername">اسم المستخدم (بالأحرف أو الأرقام)</label>
-          <input type="text" id="regUsername" class="form-control" placeholder="اختر اسم مستخدم فريد" required autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="regPassword">كلمة المرور</label>
-          <input type="password" id="regPassword" class="form-control" placeholder="اختر كلمة مرور قوية" required autocomplete="new-password">
-        </div>
-        <button type="submit" class="btn btn-primary">تسجيل حساب طالب</button>
-        <p style="text-align: center; margin-top: 12px; font-size: 0.9rem; color: var(--text-muted);">
-          ⏳ سيتم تفعيل حسابك بعد موافقة المعلم
-        </p>
-      </form>
     </div>
   </main>
 
   <script src="js/auth.js"></script>
   <script>
-    // Redirect if already logged in
-    window.addEventListener('DOMContentLoaded', () => {
-      const user = getUser();
-      if (user) {
-        if (user.role === 'teacher') {
-          window.location.href = 'teacher.html';
-        } else if (user.role === 'student') {
-          window.location.href = 'student.html';
-        }
+    let naqatiStudents = [];
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // دخول تلقائي عند القدوم من بوابة الطالب في نقاطي: index.html#nq=<id>&pin=<code>
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      const autoId = hash.get('nq');
+      const autoPin = hash.get('pin');
+      if (autoId && autoPin) {
+        history.replaceState(null, '', window.location.pathname);
+        const ok = await studentLogin(autoId, autoPin, true);
+        if (ok) return;
       }
+
+      // Redirect if already logged in
+      const user = getUser();
+      if (user && !autoId) {
+        window.location.href = user.role === 'teacher' ? 'teacher.html' : 'student.html';
+        return;
+      }
+
+      loadNaqatiStudents(autoId);
+      loadLinkInfo();
     });
 
-    let currentTab = 'login';
+    async function loadLinkInfo() {
+      try {
+        const r = await fetch(`${API_BASE}/link-info`);
+        const d = await r.json();
+        if (d.naqatiUrl) {
+          document.getElementById('naqatiLink').href = d.naqatiUrl + '/student.html';
+          document.getElementById('naqatiLinkWrap').style.display = 'block';
+        }
+      } catch (e) {}
+    }
+
+    async function loadNaqatiStudents(preselectId) {
+      const sel = document.getElementById('studentSelect');
+      try {
+        const r = await fetch(`${API_BASE}/auth/naqati-students`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        naqatiStudents = d.students || [];
+        renderStudentOptions();
+        if (preselectId) sel.value = preselectId;
+      } catch (e) {
+        sel.innerHTML = `<option value="">⚠️ ${e.message || 'تعذر تحميل الأسماء'}</option>`;
+      }
+    }
+
+    function normalizeAr(s) {
+      return String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').toLowerCase().trim();
+    }
+
+    function renderStudentOptions() {
+      const sel = document.getElementById('studentSelect');
+      const q = normalizeAr(document.getElementById('studentSearch').value);
+      const prev = sel.value;
+      const list = naqatiStudents.filter(s => !q || normalizeAr(s.name).includes(q));
+      if (!list.length) {
+        sel.innerHTML = '<option value="">لا يوجد اسم مطابق</option>';
+        return;
+      }
+      // تجميع حسب الحلقة
+      const groups = {};
+      list.forEach(s => { (groups[s.className || 'بدون حلقة'] = groups[s.className || 'بدون حلقة'] || []).push(s); });
+      sel.innerHTML = Object.keys(groups).map(g =>
+        `<optgroup label="${escapeAttr(g)}">` +
+        groups[g].map(s => `<option value="${escapeAttr(s.id)}">${escapeAttr((s.avatar || '') + ' ' + s.name)}</option>`).join('') +
+        '</optgroup>'
+      ).join('');
+      if (prev && list.some(s => s.id === prev)) sel.value = prev;
+      else if (list.length === 1) sel.value = list[0].id;
+    }
+
+    function escapeAttr(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function studentLogin(studentId, passcode, silent) {
+      try {
+        const response = await fetch(`${API_BASE}/auth/student-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId, passcode })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'فشل تسجيل الدخول');
+        setSession(data.token, data.user);
+        window.location.href = 'student.html';
+        return true;
+      } catch (error) {
+        if (!silent) showAlert('authAlert', error.message, 'danger');
+        return false;
+      }
+    }
+
+    function handleStudentLogin(e) {
+      e.preventDefault();
+      const studentId = document.getElementById('studentSelect').value;
+      const pin = document.getElementById('studentPin').value.trim();
+      if (!studentId) { showAlert('authAlert', 'اختر اسمك من القائمة', 'danger'); return; }
+      studentLogin(studentId, pin, false);
+    }
 
     function switchTab(tab) {
-      currentTab = tab;
-      const loginForm = document.getElementById('loginForm');
-      const registerForm = document.getElementById('registerForm');
-      const tabLogin = document.getElementById('tabLogin');
-      const tabRegister = document.getElementById('tabRegister');
-      const authAlert = document.getElementById('authAlert');
-
-      authAlert.style.display = 'none';
-
-      if (tab === 'login') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-        tabLogin.classList.add('active');
-        tabRegister.classList.remove('active');
-      } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-        tabLogin.classList.remove('active');
-        tabRegister.classList.add('active');
-      }
+      const isStudent = tab === 'student';
+      document.getElementById('authAlert').style.display = 'none';
+      document.getElementById('studentLoginForm').style.display = isStudent ? 'block' : 'none';
+      document.getElementById('loginForm').style.display = isStudent ? 'none' : 'block';
+      document.getElementById('tabStudent').classList.toggle('active', isStudent);
+      document.getElementById('tabLogin').classList.toggle('active', !isStudent);
     }
 
     async function handleLogin(e) {
@@ -120,49 +201,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'فشل تسجيل الدخول');
-        }
+        if (!response.ok) throw new Error(data.error || 'فشل تسجيل الدخول');
 
         setSession(data.token, data.user);
-        
-        if (data.user.role === 'teacher') {
-          window.location.href = 'teacher.html';
-        } else {
-          window.location.href = 'student.html';
-        }
-      } catch (error) {
-        showAlert('authAlert', error.message, 'danger');
-      }
-    }
-
-    async function handleRegister(e) {
-      e.preventDefault();
-      const fullName = document.getElementById('regFullName').value;
-      const username = document.getElementById('regUsername').value;
-      const password = document.getElementById('regPassword').value;
-
-      try {
-        const response = await fetch(`${API_BASE}/auth/register-student`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fullName, username, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'فشل إنشاء الحساب');
-        }
-
-        showAlert('authAlert', '✅ تم تسجيل حسابك بنجاح! بانتظار موافقة المعلم لتتمكن من تسجيل الدخول.', 'success');
-        switchTab('login');
-        
-        // Auto fill username for convenience
-        document.getElementById('loginUsername').value = username;
+        window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
       } catch (error) {
         showAlert('authAlert', error.message, 'danger');
       }

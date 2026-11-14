@@ -59,6 +59,21 @@ function showAlert(alertId, message, type = 'danger') {
   }, 5000);
 }
 
+// --- زر الانتقال إلى نقاطي (يظهر في صفحتي الطالب والمعلم) ---
+document.addEventListener('DOMContentLoaded', async () => {
+  const a = document.getElementById('naqatiNavLink');
+  if (!a) return;
+  try {
+    const r = await fetch(`${API_BASE}/link-info`);
+    const d = await r.json();
+    if (d.naqatiUrl) {
+      const user = getUser();
+      a.href = d.naqatiUrl + (user && user.role === 'student' ? '/student.html' : '/index.html');
+      a.style.display = 'inline-flex';
+    }
+  } catch (e) {}
+});
+
 // --- Dark Mode ---
 function toggleDarkMode() {
   const html = document.documentElement;

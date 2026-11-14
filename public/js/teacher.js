@@ -83,6 +83,7 @@ function loadDashboardData() {
   loadTeacherFeedbacks();
   loadUnreadMessagesCount();
   loadTeacherConversations();
+  loadLinkSettings();
 }
 
 
@@ -95,7 +96,7 @@ function filterStudentsList() {
   if (!listEl) return;
 
   const filtered = cachedStudents.filter(s => 
-    s.fullName.toLowerCase().includes(query) || s.username.toLowerCase().includes(query)
+    s.fullName.toLowerCase().includes(query)
   );
 
   if (filtered.length === 0) {
@@ -115,7 +116,7 @@ function filterStudentsList() {
           <span style="font-size: 1.2rem;">${rankBadge}</span>
           <div>
             <span style="font-weight: 700;">${escapeHtml(student.fullName)}</span>
-            <span style="font-size: 0.85rem; color: var(--text-muted); margin-right: 8px;">@${escapeHtml(student.username)}</span>
+            ${String(student.username || '').startsWith('nq_') ? '<span style="font-size: 0.75rem; color: #059669; margin-right: 8px;">🔗 نقاطي</span>' : `<span style="font-size: 0.85rem; color: var(--text-muted); margin-right: 8px;">@${escapeHtml(student.username)}</span>`}
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -602,7 +603,7 @@ async function handlePointsAction(action) {
     const response = await fetch(`${API_BASE}/teacher/add-points`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ studentId, points })
+      body: JSON.stringify({ studentId, points, reason })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
@@ -791,25 +792,99 @@ async function handleCreateAssignment(e) {
 }
 
 async function handleCreateStudent(e) {
-  e.preventDefault();
-  const fullName = document.getElementById('studentFullName').value;
-  const username = document.getElementById('studentUsername').value;
-  const password = document.getElementById('studentPassword').value;
+  if (e) e.preventDefault();
+  showAlert('teacherAlert', 'إضافة الطلاب تتم من منظومة نقاطي، وتظهر هنا تلقائياً.', 'danger');
+}
 
+// ==========================================
+// --- الربط مع منظومة نقاطي ---
+// ==========================================
+async function loadLinkSettings() {
+  const statusEl = document.getElementById('linkStatus');
   try {
-    const response = await fetch(`${API_BASE}/teacher/students`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ fullName, username, password })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
+    const res = await fetch(`${API_BASE}/teacher/integration`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const s = data.settings;
+    document.getElementById('linkEnabled').checked = !!s.enabled;
+    document.getElementById('linkOnTime').value = s.onTimePoints;
+    document.getElementById('linkLate').value = s.latePoints;
+    document.getElementById('linkOverdue').value = s.overduePoints;
+    document.getElementById('linkCriteria').value = s.criteriaName || '';
+    document.getElementById('linkManual').checked = !!s.syncManualPoints;
+    document.getElementById('linkNaqatiUrl').value = s.naqatiUrl || '';
+    document.getElementById('linkIqraUrl').value = s.iqraUrl || window.location.origin;
+    if (statusEl) {
+      statusEl.textContent = data.connected ? `🟢 متصل · ${data.studentsCount} طالب` : '🔴 غير متصل';
+      statusEl.style.color = data.connected ? '#059669' : '#DC2626';
+    }
+    setNaqatiNavLink(s.naqatiUrl);
+  } catch (err) {
+    if (statusEl) { statusEl.textContent = '🔴 تعذر الاتصال بنقاطي'; statusEl.style.color = '#DC2626'; }
+  }
+}
 
-    showAlert('teacherAlert', `تم إنشاء حساب الطالب "${fullName}" بنجاح!`, 'success');
-    document.getElementById('studentForm').reset();
-    loadDashboardData();
-  } catch (error) {
-    showAlert('teacherAlert', error.message, 'danger');
+function setNaqatiNavLink(url) {
+  const a = document.getElementById('naqatiNavLink');
+  if (!a) return;
+  if (url) { a.href = url + '/index.html'; a.style.display = 'inline-flex'; }
+  else a.style.display = 'none';
+}
+
+async function saveLinkSettings(e) {
+  e.preventDefault();
+  const body = {
+    enabled: document.getElementById('linkEnabled').checked,
+    onTimePoints: document.getElementById('linkOnTime').value,
+    latePoints: document.getElementById('linkLate').value,
+    overduePoints: document.getElementById('linkOverdue').value,
+    criteriaName: document.getElementById('linkCriteria').value,
+    syncManualPoints: document.getElementById('linkManual').checked,
+    naqatiUrl: document.getElementById('linkNaqatiUrl').value,
+    iqraUrl: document.getElementById('linkIqraUrl').value
+  };
+  try {
+    const res = await fetch(`${API_BASE}/teacher/integration`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showAlert('teacherAlert', data.message, 'success');
+    loadLinkSettings();
+  } catch (err) {
+    showAlert('teacherAlert', err.message, 'danger');
+  }
+}
+
+async function syncNaqatiStudents() {
+  try {
+    const res = await fetch(`${API_BASE}/teacher/integration/sync`, { method: 'POST', headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showAlert('teacherAlert', data.message, 'success');
+    loadStudents();
+    loadLinkSettings();
+  } catch (err) {
+    showAlert('teacherAlert', err.message, 'danger');
+  }
+}
+
+async function toggleNaqatiCodes() {
+  const box = document.getElementById('naqatiCodesList');
+  if (!box) return;
+  if (box.style.display === 'block') { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = '<div class="empty-state">⏳ جاري التحميل...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/teacher/naqati-codes`, { headers: getAuthHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (!data.students.length) { box.innerHTML = '<div class="empty-state">لا يوجد طلاب في نقاطي.</div>'; return; }
+    box.innerHTML = data.students.map(s => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; background: var(--surface); border-radius: 8px; margin-bottom: 6px;">
+        <span>${escapeHtml(s.avatar || '')} ${escapeHtml(s.name)} <small style="color: var(--text-muted);">${escapeHtml(s.className || '')}</small></span>
+        <b style="font-family: monospace; font-size: 1.05rem; letter-spacing: 2px;">🔑 ${escapeHtml(s.passcode || '—')}</b>
+      </div>`).join('');
+  } catch (err) {
+    box.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
   }
 }
 
