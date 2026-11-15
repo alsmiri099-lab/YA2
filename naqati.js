@@ -27,8 +27,10 @@ const DEFAULT_SETTINGS = {
   overduePoints: 0,
   criteriaName: '📖 ورد القراءة (اقرأ)',
   syncManualPoints: true,
-  iqraUrl: '',
-  naqatiUrl: ''
+  iqraUrl: 'https://ya2-live.vercel.app',
+  naqatiUrl: 'https://ya4.vercel.app',
+  iqraPointsEnabled: true,
+  showStudentReadingRecords: true
 };
 
 let schemaReady = null;
@@ -73,8 +75,10 @@ async function getSettings(force = false) {
     overduePoints: row.overdue_points ?? DEFAULT_SETTINGS.overduePoints,
     criteriaName: row.criteria_name || DEFAULT_SETTINGS.criteriaName,
     syncManualPoints: row.sync_manual_points !== false,
-    iqraUrl: row.iqra_url || '',
-    naqatiUrl: row.naqati_url || ''
+    iqraUrl: (row.iqra_url && !/-projects\.vercel\.app/.test(row.iqra_url)) ? row.iqra_url : 'https://ya2-live.vercel.app',
+    naqatiUrl: row.naqati_url || '',
+    iqraPointsEnabled: row.iqra_points_enabled !== false,
+    showStudentReadingRecords: row.show_student_reading_records !== false
   };
   settingsCacheAt = Date.now();
   return settingsCache;
@@ -117,7 +121,7 @@ function cleanUrl(u) {
 // تسجيل رابط موقع اقرأ تلقائياً من أول زيارة على الاستضافة (ليظهر زر اقرأ داخل نقاطي)
 let iqraUrlRegistered = false;
 async function registerIqraUrl(origin) {
-  if (iqraUrlRegistered || !origin || /localhost|127\.0\.0\.1/.test(origin)) return;
+  if (iqraUrlRegistered || !origin || /localhost|127\.0\.0\.1|-projects\.vercel\.app/.test(origin)) return;
   iqraUrlRegistered = true;
   try {
     await ensureSchema();
@@ -170,6 +174,48 @@ async function addPoints(naqatiStudentId, points, criteriaName, note = '') {
   return true;
 }
 
+// تسجيل ورد القراءة في سجل أوراد اقرأ داخل نقاطي
+async function recordReadingSubmission(naqatiStudentId, readingData = {}) {
+  try {
+    const st = await pool.query('SELECT name, class_id FROM students WHERE id = $1', [String(naqatiStudentId)]);
+    if (!st.rows[0]) return false;
+
+    const {
+      id = 'sub_' + Date.now(),
+      bookName = 'ورد القراءة',
+      startPage = null,
+      endPage = null,
+      questions = '',
+      freeSpace = '',
+      points = 0,
+      isLate = false
+    } = readingData;
+
+    const now = Date.now();
+    await pool.query(`
+      INSERT INTO iqra_reading_records (
+        id, student_id, student_name, class_id, book_name,
+        start_page, end_page, questions, free_space, points, is_late,
+        submitted_at, record_date, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), CURRENT_DATE, $12)
+      ON CONFLICT (id) DO UPDATE SET
+        questions = EXCLUDED.questions,
+        free_space = EXCLUDED.free_space,
+        points = EXCLUDED.points,
+        is_late = EXCLUDED.is_late
+    `, [
+      String(id), String(naqatiStudentId), st.rows[0].name, st.rows[0].class_id,
+      bookName, parseInt(startPage, 10) || null, parseInt(endPage, 10) || null,
+      questions || '', freeSpace || '', parseInt(points, 10) || 0,
+      !!isLate, now
+    ]);
+    return true;
+  } catch (e) {
+    console.error('recordReadingSubmission error:', e.message);
+    return false;
+  }
+}
+
 async function ping() {
   const r = await pool.query('SELECT COUNT(*)::int AS n FROM students');
   return r.rows[0].n;
@@ -182,6 +228,7 @@ module.exports = {
   listStudents,
   verifyStudent,
   addPoints,
+  recordReadingSubmission,
   ping,
   DEFAULT_SETTINGS
 };

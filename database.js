@@ -379,12 +379,17 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
       .update({ points: newPoints })
       .eq('id', studentId);
 
-    // إرسال الفرق إلى سجل نقاط الطالب في نقاطي
-    if (linkSettings.enabled) {
+    // إرسال الفرق إلى سجل نقاط الطالب في نقاطي (إذا كان احتساب نقاط اقرأ مفعلاً)
+    if (linkSettings.enabled && linkSettings.iqraPointsEnabled !== false) {
       const pages = assignment.start_page && assignment.end_page ? ` (ص ${assignment.start_page}-${assignment.end_page})` : '';
       const note = `${assignment.book_name || 'ورد قراءة'}${pages}${isLate ? ' - تسليم متأخر' : ''}${pointsDiff < 0 ? ' - تعديل' : ''}`;
       await pushPointsToNaqati(studentId, pointsDiff, linkSettings.criteriaName, note);
     }
+  }
+
+  // تسجيل وحفظ الورد كاملاً في سجل قراءة اقرأ بنقاطي
+  if (linkSettings.enabled) {
+    await pushReadingRecordToNaqati(studentId, assignment, submissionData, pointsToAward, isLate);
   }
 
   return mapSubmissionKeys(submissionData);
@@ -395,6 +400,27 @@ const NQ_PREFIX = 'nq_';
 
 function naqatiIdFromUsername(username) {
   return username && username.startsWith(NQ_PREFIX) ? username.slice(NQ_PREFIX.length) : null;
+}
+
+async function pushReadingRecordToNaqati(ya2StudentId, assignment, submissionData, pointsToAward, isLate) {
+  try {
+    const { data: u } = await supabase.from('users').select('username').eq('id', ya2StudentId).single();
+    const nqId = naqatiIdFromUsername(u && u.username);
+    if (!nqId) return false;
+    return await naqati.recordReadingSubmission(nqId, {
+      id: 'sub_' + submissionData.id,
+      bookName: assignment.book_name || 'ورد القراءة',
+      startPage: assignment.start_page,
+      endPage: assignment.end_page,
+      questions: submissionData.questions,
+      freeSpace: submissionData.free_space,
+      points: pointsToAward,
+      isLate: !!isLate
+    });
+  } catch (e) {
+    console.error('Naqati recordReadingSubmission failed:', e.message);
+    return false;
+  }
 }
 
 async function pushPointsToNaqati(ya2StudentId, points, criteriaName, note) {
