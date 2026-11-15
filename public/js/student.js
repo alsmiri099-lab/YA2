@@ -193,6 +193,8 @@ function loadStudentDashboard() {
   loadStudentPoints();
   loadBooksOverview();
   loadStudentUnreadCount();
+  loadStudentGems();
+  fetchLinkInfoSetting();
 
   // Polling unread messages count every 15s
   setInterval(() => {
@@ -207,6 +209,16 @@ function loadStudentDashboard() {
       }
     }
   }, 15000);
+}
+
+async function fetchLinkInfoSetting() {
+  try {
+    const res = await fetch(`${API_BASE}/link-info`);
+    if (res.ok) {
+      const data = await res.json();
+      window.cachedVoiceCapsuleRequired = !!data.voiceCapsuleRequired;
+    }
+  } catch (e) {}
 }
 
 // --- تحميل نقاط الطالب الإجمالية ---
@@ -640,6 +652,13 @@ function loadBookAssignments(bookName) {
             <div>${escapeHtml(sub.freeSpace)}</div>
           </div>`;
       }
+      if (sub.audioData) {
+        subDetails += `
+          <div class="detail-box" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3);">
+            <div class="detail-box-title" style="color: #d97706;">🎙️ كبسولتك الصوتية المسجلة:</div>
+            <audio controls src="${sub.audioData}" style="width: 100%; height: 36px; margin-top: 4px;"></audio>
+          </div>`;
+      }
 
       html += `
         <div class="book-submission-success">
@@ -660,6 +679,8 @@ function loadBookAssignments(bookName) {
         ? 'style="background: linear-gradient(135deg, #6B7280, #9CA3AF);"'
         : '';
 
+      const isVoiceRequired = window.cachedVoiceCapsuleRequired === true;
+
       html += `
         <div class="book-form-section">
           <h4>✍️ تسجيل إنجازك</h4>
@@ -678,6 +699,37 @@ function loadBookAssignments(bookName) {
               <label>📝 مساحة حرة (تلخيص، خواطر) (اختياري)</label>
               <textarea id="freeSpace_${currentIndex}" class="form-control" placeholder="اكتب ما يجول في خاطرك..."></textarea>
             </div>
+
+            <!-- كبسولة الفائدة الصوتية المرافقة للورد -->
+            <div class="form-group" style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 12px 14px; margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-weight: 800; font-size: 0.9rem; color: #b45309; margin: 0; display: flex; align-items: center; gap: 6px;">
+                  <span>🎙️ كبسولة الفائدة الصوتية</span>
+                </label>
+                <span class="badge ${isVoiceRequired ? 'badge-warning' : 'badge-secondary'}" style="font-size: 0.78rem;">
+                  ${isVoiceRequired ? '⚠️ إلزامي بتوجيه المعلم' : 'اختياري'}
+                </span>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px 0;">
+                سجل صوتك بفوائد أو تلخيص هذا الورد (من 15 إلى 90 ثانية):
+              </p>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="btnRecord_${currentIndex}" onclick="handleToggleAssignmentRecord(${currentIndex})" style="padding: 5px 12px; font-size: 0.82rem; font-weight: 700;">
+                  🔴 بدء التسجيل
+                </button>
+                <span id="recordTimer_${currentIndex}" style="font-family: monospace; font-weight: 700; font-size: 0.95rem; color: var(--text-main);">00:00</span>
+                <span id="recordWave_${currentIndex}" style="display:none; color:#ef4444; font-size:0.8rem; font-weight:700;">● جاري التسجيل...</span>
+              </div>
+              <div id="audioPreviewWrap_${currentIndex}" style="display: none; margin-top: 10px;">
+                <audio id="audioPreview_${currentIndex}" controls style="width: 100%; height: 36px;"></audio>
+                <div style="margin-top: 4px; text-align: left;">
+                  <button type="button" onclick="handleDiscardAssignmentAudio(${currentIndex})" style="font-size: 0.75rem; color: #ef4444; border:none; background:none; cursor:pointer;">
+                    🗑️ حذف وإعادة التسجيل
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <button type="submit" class="btn btn-primary" ${submitBtnStyle}>${submitBtnText}</button>
           </form>
         </div>`;
@@ -694,6 +746,93 @@ function loadBookAssignments(bookName) {
   }).join('');
 }
 
+// --- تسجيل الكبسولة الصوتية للورد ---
+let assignmentRecordedAudio = {};
+let assignmentRecordedDurations = {};
+let assignmentMediaRecorders = {};
+let assignmentRecordIntervals = {};
+let assignmentRecordSeconds = {};
+
+async function handleToggleAssignmentRecord(index) {
+  const btn = document.getElementById(`btnRecord_${index}`);
+  const timer = document.getElementById(`recordTimer_${index}`);
+  const wave = document.getElementById(`recordWave_${index}`);
+  const previewWrap = document.getElementById(`audioPreviewWrap_${index}`);
+  const audioPreview = document.getElementById(`audioPreview_${index}`);
+
+  let rec = assignmentMediaRecorders[index];
+
+  if (!rec || rec.state === 'inactive') {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      rec = new MediaRecorder(stream);
+      assignmentMediaRecorders[index] = rec;
+      let chunks = [];
+      assignmentRecordSeconds[index] = 0;
+
+      rec.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      rec.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          assignmentRecordedAudio[index] = reader.result;
+          assignmentRecordedDurations[index] = assignmentRecordSeconds[index] || 15;
+          if (audioPreview) audioPreview.src = reader.result;
+          if (previewWrap) previewWrap.style.display = 'block';
+        };
+      };
+
+      rec.start(200);
+      if (btn) {
+        btn.innerHTML = '⏹️ إيقاف التسجيل';
+        btn.classList.add('btn-danger');
+      }
+      if (wave) wave.style.display = 'inline';
+
+      assignmentRecordIntervals[index] = setInterval(() => {
+        assignmentRecordSeconds[index]++;
+        const s = assignmentRecordSeconds[index];
+        const mins = String(Math.floor(s / 60)).padStart(2, '0');
+        const secs = String(s % 60).padStart(2, '0');
+        if (timer) timer.textContent = `${mins}:${secs}`;
+        if (s >= 90) handleToggleAssignmentRecord(index);
+      }, 1000);
+
+    } catch (err) {
+      alert('يرجى السماح بالوصول إلى الميكروفون لتسجيل الكبسولة الصوتية.');
+    }
+  } else if (rec.state === 'recording') {
+    rec.stop();
+    clearInterval(assignmentRecordIntervals[index]);
+    if (btn) {
+      btn.innerHTML = '🔴 إعادة التسجيل';
+      btn.classList.remove('btn-danger');
+    }
+    if (wave) wave.style.display = 'none';
+  }
+}
+
+function handleDiscardAssignmentAudio(index) {
+  assignmentRecordedAudio[index] = null;
+  assignmentRecordedDurations[index] = 0;
+  const previewWrap = document.getElementById(`audioPreviewWrap_${index}`);
+  if (previewWrap) previewWrap.style.display = 'none';
+  const audioPreview = document.getElementById(`audioPreview_${index}`);
+  if (audioPreview) audioPreview.src = '';
+  const timer = document.getElementById(`recordTimer_${index}`);
+  if (timer) timer.textContent = '00:00';
+  const btn = document.getElementById(`btnRecord_${index}`);
+  if (btn) {
+    btn.innerHTML = '🔴 بدء التسجيل';
+    btn.classList.remove('btn-danger');
+  }
+}
+
 // --- إرسال الإنجاز ---
 async function handleSubmitProgress(e, assignmentId, index) {
   e.preventDefault();
@@ -706,15 +845,35 @@ async function handleSubmitProgress(e, assignmentId, index) {
     return;
   }
 
+  const isVoiceMandatory = window.cachedVoiceCapsuleRequired === true;
+  const audioData = assignmentRecordedAudio[index] || null;
+  const durationSec = assignmentRecordedDurations[index] || 0;
+
+  if (isVoiceMandatory && !audioData) {
+    showAlert('studentAlert', '⚠️ تسجيل كبسولة الفائدة الصوتية إلزامي لهذا الورد بتوجيه من المعلم. يرجى تسجيل صوتك أولاً.', 'danger');
+    return;
+  }
+
   try {
     const response = await fetch(`${API_BASE}/student/submit`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ assignmentId, isCompleted, questions, freeSpace })
+      body: JSON.stringify({
+        assignmentId,
+        isCompleted,
+        questions,
+        freeSpace,
+        audioData,
+        durationSec
+      })
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
+
+    // تصفير التسجيل الصوتي
+    assignmentRecordedAudio[index] = null;
+    assignmentRecordedDurations[index] = 0;
 
     showAlert('studentAlert', data.message, 'success');
 
@@ -1326,6 +1485,150 @@ async function handleSendStudentMessage(event) {
   } finally {
     if (sendBtn) sendBtn.disabled = false;
     input.focus();
+  }
+}
+
+// ==========================================
+// --- حائط درر القراءة في صفحة الطالب ---
+// ==========================================
+
+async function loadStudentGems() {
+  const container = document.getElementById('studentGemsList');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/ibda/gems');
+    if (!res.ok) throw new Error('فشل جلب الدرر');
+    const data = await res.json();
+    const gems = data.gems || [];
+
+    if (gems.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align:center; padding: 30px 15px; color: var(--text-muted); background: var(--surface); border-radius: 12px; border: 1px dashed var(--border);">
+          <div style="font-size: 2.2rem; margin-bottom: 6px;">💎</div>
+          <div style="font-weight: 700; color: var(--text-main);">لا توجد درر مسجلة بعد</div>
+          <div style="font-size: 0.85rem; margin-top: 4px;">كن أول من يشارك درة وفائدة استوقفته في قراءته اليوم!</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = gems.map(g => `
+      <div class="gem-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--border-radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        <div style="font-size: 0.8rem; color: #f59e0b; font-weight: 800; margin-bottom: 6px;">
+          📖 ${escapeHtml(g.book_title || 'ورد القراءة')}
+        </div>
+        <div style="font-size: 0.92rem; color: var(--text-main); font-weight: 600; line-height: 1.5; margin-bottom: 14px;">
+          «${escapeHtml(g.gem_text)}»
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; font-size: 0.82rem;">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text-muted);">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background: #f59e0b; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900;">
+              ${(g.student_name || 'ط')[0]}
+            </div>
+            <span>${escapeHtml(g.student_name)}</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-react" onclick="handleStudentReactGem(${g.id}, 'like', this)" style="border: 1px solid var(--border); background: var(--background); border-radius: 20px; padding: 2px 8px; font-size: 0.78rem; cursor: pointer;">
+              ❤️ <span class="react-cnt">${g.likes_count || 0}</span>
+            </button>
+            <button type="button" class="btn-react" onclick="handleStudentReactGem(${g.id}, 'gem', this)" style="border: 1px solid var(--border); background: var(--background); border-radius: 20px; padding: 2px 8px; font-size: 0.78rem; cursor: pointer;">
+              💎 <span class="react-cnt">${g.gems_count || 0}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading student gems:', err);
+    if (container) container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color: var(--text-muted);">تعذر تحميل الدرر حالياً.</div>';
+  }
+}
+
+async function handleStudentReactGem(id, type, btn) {
+  try {
+    const cntEl = btn.querySelector('.react-cnt');
+    if (cntEl) cntEl.textContent = parseInt(cntEl.textContent || '0', 10) + 1;
+    btn.style.transform = 'scale(1.2)';
+    setTimeout(() => btn.style.transform = 'none', 200);
+
+    await fetch(`/api/ibda/gems/${id}/react`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type })
+    });
+  } catch (e) {}
+}
+
+function openStudentAddGemModal() {
+  const modal = document.getElementById('studentAddGemModal');
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    const input = document.getElementById('studentGemBookInput');
+    if (input) input.focus();
+  }
+}
+
+function closeStudentAddGemModal() {
+  const modal = document.getElementById('studentAddGemModal');
+  if (modal) {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+function handleStudentAddGemOverlayClick(e) {
+  if (e.target && e.target.id === 'studentAddGemModal') {
+    closeStudentAddGemModal();
+  }
+}
+
+async function handleStudentSubmitGem(e) {
+  e.preventDefault();
+  const bookEl = document.getElementById('studentGemBookInput');
+  const textEl = document.getElementById('studentGemTextInput');
+  const submitBtn = document.getElementById('btnStudentSubmitGem');
+
+  const bookTitle = bookEl ? bookEl.value.trim() : '';
+  const gemText = textEl ? textEl.value.trim() : '';
+
+  if (!gemText) {
+    alert('الرجاء كتابة الفائدة أو الاقتباس أولاً!');
+    return;
+  }
+
+  const user = getUser();
+  const studentName = user ? (user.fullName || user.username) : 'طالب';
+  const studentId = user ? user.id : null;
+  const classId = user ? user.classId : null;
+
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/ibda/gems', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId,
+        studentName,
+        classId,
+        bookTitle: bookTitle || 'ورد القراءة',
+        gemText
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'فشل نشر الدرة');
+
+    closeStudentAddGemModal();
+    if (textEl) textEl.value = '';
+    if (bookEl) bookEl.value = '';
+    showAlert('studentAlert', 'بارك الله فيك! تم نشر درتك في حائط درر القراءة بنجاح ✨💎', 'success');
+    loadStudentGems();
+  } catch (err) {
+    alert(err.message || 'حدث خطأ أثناء نشر الدرة');
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 

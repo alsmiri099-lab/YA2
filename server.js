@@ -99,13 +99,37 @@ app.post('/api/auth/student-login', async (req, res) => {
   }
 });
 
-// روابط الموقعين (للأزرار المتبادلة)
+// روابط الموقعين (للأزرار المتبادلة) وإعدادات الكبسولة
 app.get('/api/link-info', async (req, res) => {
   try {
     const s = await naqati.getSettings();
-    res.json({ naqatiUrl: s.naqatiUrl, iqraUrl: s.iqraUrl });
+    res.json({
+      naqatiUrl: s.naqatiUrl,
+      iqraUrl: s.iqraUrl,
+      voiceCapsuleRequired: !!s.voiceCapsuleRequired
+    });
   } catch (e) {
-    res.json({ naqatiUrl: '', iqraUrl: '' });
+    res.json({ naqatiUrl: '', iqraUrl: '', voiceCapsuleRequired: false });
+  }
+});
+
+// إعداد كبسولة الفائدة الصوتية (إلزامية / اختيارية) للمعلم
+app.get('/api/teacher/voice-capsule-setting', authenticateToken, requireTeacher, async (req, res) => {
+  try {
+    const s = await naqati.getSettings();
+    res.json({ success: true, voiceCapsuleRequired: !!s.voiceCapsuleRequired });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/teacher/voice-capsule-setting', authenticateToken, requireTeacher, async (req, res) => {
+  try {
+    const { voiceCapsuleRequired } = req.body || {};
+    const s = await naqati.saveSettings({ voiceCapsuleRequired: !!voiceCapsuleRequired });
+    res.json({ success: true, voiceCapsuleRequired: !!s.voiceCapsuleRequired });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -472,20 +496,23 @@ app.get('/api/student/assignments/history', authenticateToken, requireStudent, a
 
 // Submit Reading Progress
 app.post('/api/student/submit', authenticateToken, requireStudent, async (req, res) => {
-  const { assignmentId, isCompleted, questions, freeSpace } = req.body;
+  const { assignmentId, isCompleted, questions, freeSpace, audioData, durationSec } = req.body;
 
   if (!assignmentId) {
     return res.status(400).json({ error: 'معرف الورد اليومي مطلوب' });
   }
 
   try {
-    const submission = await db.submitProgress(req.user.id, assignmentId, isCompleted, questions, freeSpace);
+    const submission = await db.submitProgress(req.user.id, assignmentId, isCompleted, questions, freeSpace, audioData, durationSec);
     let message = 'تم إرسال إنجازك بنجاح.';
     if (submission.pointsAwarded > 0) {
       message += ` حصلت على ${submission.pointsAwarded} نقطة!`;
       if (submission.isLate) {
         message += ' (تسليم متأخر)';
       }
+    }
+    if (audioData) {
+      message += ' وتم حفظ كبسولتك الصوتية بنجاح 🎙️';
     }
     message += ' بارك الله في همتك!';
     res.json({ message, submission });

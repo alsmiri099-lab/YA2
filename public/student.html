@@ -6,6 +6,7 @@
   <title>لوحة تحكم الطالب | اقرأ</title>
   <link rel="icon" type="image/jpeg" href="favicon.jpeg">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/ibda.css?v=2.0">
 </head>
 <body>
 
@@ -159,6 +160,27 @@
           جاري تحميل الكتب...
         </div>
       </div>
+
+      <!-- قسم حائط درر القراءة للطلاب -->
+      <div class="card" style="margin-top: 30px; border-radius: var(--border-radius-lg); padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 class="card-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
+              <span>💎 حائط درر القراءة</span>
+            </h3>
+            <p style="font-size: 0.86rem; color: var(--text-muted); margin: 4px 0 0;">
+              فوائد واقتباسات ملهمة يسطرها الطلاب والمعلمون من بطون الكتب
+            </p>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="openStudentAddGemModal()" style="font-size: 0.88rem; padding: 7px 16px; background: linear-gradient(135deg, #f59e0b, #d97706); border:none; font-weight:700;">
+            ✨ شارك درّة جديدة
+          </button>
+        </div>
+
+        <div id="studentGemsList" class="gems-wall-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+          <div class="empty-state" style="grid-column: 1/-1;">جاري تحميل الدرر...</div>
+        </div>
+      </div>
     </div>
 
     <!-- ============ الشاشة 2: صفحة كتاب محدد ============ -->
@@ -270,6 +292,34 @@
     </div>
   </div>
 
+  <!-- Modal: مشاركة درة جديدة للطالب -->
+  <div id="studentAddGemModal" class="dev-contact-modal-overlay" onclick="handleStudentAddGemOverlayClick(event)">
+    <div class="dev-contact-modal-content" style="max-width: 520px;">
+      <div class="dev-modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">
+        <div class="dev-modal-title">
+          <span>💎 شارك فائدة أو درّة من قراءتك</span>
+        </div>
+        <button type="button" class="dev-modal-close-btn" onclick="closeStudentAddGemModal()" title="إغلاق">✕</button>
+      </div>
+      <form onsubmit="handleStudentSubmitGem(event)" style="padding: 20px;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 6px; display: block;">📖 اسم الكتاب أو الموضوع:</label>
+          <input type="text" id="studentGemBookInput" class="form-control" placeholder="مثلاً: حلية طالب العلم، رياض الصالحين..." required>
+        </div>
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 6px; display: block;">✍️ نص الدرة أو الاقتباس:</label>
+          <textarea id="studentGemTextInput" class="form-control" rows="4" placeholder="اكتب الفائدة التي استوقفتك وأعجبتك في قراءتك..." required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeStudentAddGemModal()">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnStudentSubmitGem" style="background: linear-gradient(135deg, #f59e0b, #d97706); border:none; font-weight:700;">
+            <span>نشر الدرة في الحائط ✨</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="student-footer">
     <p>📚 اجعل القراءة عادة يومية — بارك الله في علمك وعملك</p>
@@ -282,6 +332,7 @@
 
   <script src="js/auth.js?v=2.0"></script>
   <script src="js/contact-dev.js?v=2.0"></script>
+  <script src="js/ibda.js?v=2.0"></script>
   <script src="js/student.js?v=2.0"></script>
 </body>
 </html>

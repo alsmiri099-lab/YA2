@@ -272,7 +272,7 @@ async function getAssignmentsHistoryForStudent(studentId) {
 
 // --- SUBMISSION OPERATIONS ---
 
-async function submitProgress(studentId, assignmentId, isCompleted, questions = '', freeSpace = '') {
+async function submitProgress(studentId, assignmentId, isCompleted, questions = '', freeSpace = '', audioData = null, durationSec = 0) {
   // جلب بيانات الورد لحساب النقاط
   const { data: assignment } = await supabase
     .from('assignments')
@@ -285,6 +285,25 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
   try { linkSettings = await naqati.getSettings(); } catch (e) { console.warn('Naqati settings unavailable:', e.message); }
 
   if (!assignment) throw new Error('الورد غير موجود');
+
+  // إذا تم تسجيل كبسولة صوتية، نقوم بحفظها في ibda_capsules تلقائياً
+  if (audioData) {
+    try {
+      const { data: stUser } = await supabase.from('users').select('full_name, class_id').eq('id', studentId).single();
+      const studentName = stUser ? stUser.full_name : 'طالب';
+      await naqati.addIbdaCapsule({
+        studentId: studentId.toString(),
+        studentName: studentName,
+        classId: stUser ? stUser.class_id : null,
+        bookTitle: assignment ? assignment.book_name : 'ورد القراءة',
+        audioData: audioData,
+        durationSec: durationSec || 15,
+        note: (freeSpace || '').trim() || 'كبسولة مسجلة مع إنجاز الورد'
+      });
+    } catch (e) {
+      console.warn('Error saving ibda capsule:', e.message);
+    }
+  }
 
   const todayStr = new Date().toLocaleDateString('sv');
   const targetDate = assignment.target_date;
@@ -326,6 +345,8 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
   let submissionData;
   let previousPoints = 0;
 
+  const storageFreeSpace = audioData ? `${(freeSpace || '').trim()}\n[VOICE_CAPSULE]:${audioData}` : (freeSpace || '').trim();
+
   if (existingSubmission) {
     previousPoints = existingSubmission.points_awarded || 0;
 
@@ -334,7 +355,7 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
       .update({
         is_completed: !!isCompleted,
         questions: questions.trim(),
-        free_space: freeSpace.trim(),
+        free_space: storageFreeSpace,
         submitted_at: new Date().toISOString(),
         points_awarded: pointsToAward,
         is_late: isLate
@@ -353,7 +374,7 @@ async function submitProgress(studentId, assignmentId, isCompleted, questions = 
         assignment_id: assignmentId,
         is_completed: !!isCompleted,
         questions: questions.trim(),
-        free_space: freeSpace.trim(),
+        free_space: storageFreeSpace,
         points_awarded: pointsToAward,
         is_late: isLate
       }])
@@ -538,13 +559,21 @@ async function getSubmissionsForTeacherDashboard(teacherId) {
 
   return submissions.map(sub => {
     const assignment = assignments.find(a => a.id === sub.assignment_id);
+    let cleanFreeSpace = sub.free_space || '';
+    let audioData = null;
+    if (cleanFreeSpace.includes('[VOICE_CAPSULE]:')) {
+      const parts = cleanFreeSpace.split('[VOICE_CAPSULE]:');
+      cleanFreeSpace = parts[0].trim();
+      audioData = parts[1].trim();
+    }
     return {
       id: sub.id,
       studentId: sub.student_id,
       assignmentId: sub.assignment_id,
       isCompleted: sub.is_completed,
       questions: sub.questions,
-      freeSpace: sub.free_space,
+      freeSpace: cleanFreeSpace,
+      audioData: audioData,
       submittedAt: sub.submitted_at,
       pointsAwarded: sub.points_awarded || 0,
       isLate: sub.is_late || false,

@@ -30,7 +30,8 @@ const DEFAULT_SETTINGS = {
   iqraUrl: 'https://ya2-live.vercel.app',
   naqatiUrl: 'https://ya4.vercel.app',
   iqraPointsEnabled: true,
-  showStudentReadingRecords: true
+  showStudentReadingRecords: true,
+  voiceCapsuleRequired: false
 };
 
 let schemaReady = null;
@@ -47,6 +48,7 @@ function ensureSchema() {
         sync_manual_points BOOLEAN DEFAULT TRUE,
         iqra_url TEXT DEFAULT '',
         naqati_url TEXT DEFAULT '',
+        voice_capsule_required BOOLEAN DEFAULT FALSE,
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
       INSERT INTO reading_link_settings (id) VALUES ('global') ON CONFLICT (id) DO NOTHING;
@@ -78,7 +80,8 @@ async function getSettings(force = false) {
     iqraUrl: (row.iqra_url && !/-projects\.vercel\.app/.test(row.iqra_url)) ? row.iqra_url : 'https://ya2-live.vercel.app',
     naqatiUrl: row.naqati_url || '',
     iqraPointsEnabled: row.iqra_points_enabled !== false,
-    showStudentReadingRecords: row.show_student_reading_records !== false
+    showStudentReadingRecords: row.show_student_reading_records !== false,
+    voiceCapsuleRequired: row.voice_capsule_required === true
   };
   settingsCacheAt = Date.now();
   return settingsCache;
@@ -99,14 +102,16 @@ async function saveSettings(input = {}) {
     criteriaName: (input.criteriaName || '').trim() || cur.criteriaName,
     syncManualPoints: input.syncManualPoints !== undefined ? !!input.syncManualPoints : cur.syncManualPoints,
     iqraUrl: input.iqraUrl !== undefined ? cleanUrl(input.iqraUrl) : cur.iqraUrl,
-    naqatiUrl: input.naqatiUrl !== undefined ? cleanUrl(input.naqatiUrl) : cur.naqatiUrl
+    naqatiUrl: input.naqatiUrl !== undefined ? cleanUrl(input.naqatiUrl) : cur.naqatiUrl,
+    voiceCapsuleRequired: input.voiceCapsuleRequired !== undefined ? !!input.voiceCapsuleRequired : (cur.voiceCapsuleRequired || false)
   };
   await pool.query(`
     UPDATE reading_link_settings SET
       enabled = $1, on_time_points = $2, late_points = $3, overdue_points = $4,
-      criteria_name = $5, sync_manual_points = $6, iqra_url = $7, naqati_url = $8, updated_at = NOW()
+      criteria_name = $5, sync_manual_points = $6, iqra_url = $7, naqati_url = $8,
+      voice_capsule_required = $9, updated_at = NOW()
     WHERE id = 'global'
-  `, [next.enabled, next.onTimePoints, next.latePoints, next.overduePoints, next.criteriaName, next.syncManualPoints, next.iqraUrl, next.naqatiUrl]);
+  `, [next.enabled, next.onTimePoints, next.latePoints, next.overduePoints, next.criteriaName, next.syncManualPoints, next.iqraUrl, next.naqatiUrl, next.voiceCapsuleRequired]);
   settingsCache = next;
   settingsCacheAt = Date.now();
   return next;

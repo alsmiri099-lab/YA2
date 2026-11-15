@@ -34,6 +34,13 @@ function switchTab(tabName) {
     loadTeacherConversations();
   }
 
+  // If ibda tab is opened, initialize IbdaHub
+  if (tabName === 'ibda') {
+    if (window.IbdaHub) {
+      IbdaHub.init('teacherIbdaContainer', { isTeacher: true });
+    }
+  }
+
   // Save to localStorage
   localStorage.setItem('teacherActiveTab', tabName);
 }
@@ -315,6 +322,15 @@ async function loadSubmissions() {
         }
         if (sub.freeSpace) {
           detailsHtml += `<div class="detail-box"><div class="detail-box-title">📝 مساحة حرة:</div><div>${escapeHtml(sub.freeSpace)}</div></div>`;
+        }
+        if (sub.audioData) {
+          detailsHtml += `
+            <div style="margin-top:6px; padding:6px 10px; background:rgba(245,158,11,0.12); border-radius:8px; border:1px solid rgba(245,158,11,0.3);">
+              <div style="font-size:0.75rem; font-weight:800; color:#d97706; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+                <span>🎙️ كبسولة الفائدة الصوتية للطالب:</span>
+              </div>
+              <audio controls src="${sub.audioData}" style="height:32px; width:100%; max-width:220px; outline:none;"></audio>
+            </div>`;
         }
         if (!detailsHtml) {
           detailsHtml = '<span style="color: var(--text-muted); font-size: 0.9rem;">لا توجد ملاحظات</span>';
