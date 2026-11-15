@@ -1,6 +1,10 @@
 /**
  * منظومة إبداع | IBDA CREATIVE HUB JAVASCRIPT
- * وحدة تفاعلية متكاملة لواحة القارئ، كبسولة الصوت، خريطة العلماء، حائط الدرر، سباق المسجد، وملصقات QR
+ * تضم فقط:
+ * 1. 🎙️ كبسولة الفائدة الصوتية
+ * 2. 💎 حائط درر القراءة
+ * 3. 🖨️ ملصقات QR الذكية للكتب
+ * 4. 📰 صحيفة الأسبوع الحائطية
  */
 
 window.IbdaHub = (function () {
@@ -11,129 +15,6 @@ window.IbdaHub = (function () {
   let currentAudioBlob = null;
   let currentAudioDataUrl = null;
 
-  // المحطات التاريخية لخريطة طريق العلماء
-  const SCHOLARS_STATIONS = [
-    {
-      id: 1,
-      name: "مكة المكرمة",
-      landmark: "دار الأرقم — انطلاقة نور النبوة",
-      pagesRequired: 0,
-      icon: "🕋",
-      desc: "هنا حيث أشرقت شمس الرسالة وبدأت أول آية: {اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ}. كل صفحة تقرؤها امتداد لتلك البداية العظيمة.",
-      scholar: "عبدالله بن مسعود أول من جهر بالقرآن عند الكعبة بمكة المكرمة.",
-      badge: "وسام البداية المباركة 🌟"
-    },
-    {
-      id: 2,
-      name: "المدينة المنورة",
-      landmark: "المسجد النبوي — روضة العلم والموطأ",
-      pagesRequired: 30,
-      icon: "🕌",
-      desc: "مدينة رسول الله ﷺ، حيث كُتبت صحائف الوحي، وجلس الإمام مالك يروي موطأه عند قبر المصطفى ﷺ وهو يقول: لن يصلح آخر هذه الأمة إلا بما صلح به أولها.",
-      scholar: "الإمام مالك بن أنس — إمام دار الهجرة ومؤلف الموطأ.",
-      badge: "وسام فارس طيبة 🌿"
-    },
-    {
-      id: 3,
-      name: "الكوفة",
-      landmark: "محراب القرآن ورواية الترتيل",
-      pagesRequired: 80,
-      icon: "📜",
-      desc: "مهبط كبار قراء الأمة؛ منها انتشرت قراءة عاصم برواية حفص التي يتلو بها العالم الإسلامي اليوم.",
-      scholar: "الإمام عاصم بن أبي النجود وتلميذه حفص بن سليمان الكوفي.",
-      badge: "وسام راوي الترتيل 📖"
-    },
-    {
-      id: 4,
-      name: "بغداد",
-      landmark: "دار السلام — بيت الحكمة ومكتبات المجد",
-      pagesRequired: 160,
-      icon: "🏛️",
-      desc: "عاصمة العلم الكبرى ومجمع العلماء؛ دار الحكمة التي ترجمت فيها العلوم وألفت فيها أمهات كتب الفقه واللغة والتفسير.",
-      scholar: "الإمام أحمد بن حنبل صابر المحنة وإمام أهل السنة.",
-      badge: "وسام حكيم المعرفة 👑"
-    },
-    {
-      id: 5,
-      name: "دمشق",
-      landmark: "جامع بني أمية — منارة الحديث النبوي",
-      pagesRequired: 260,
-      icon: "🌸",
-      desc: "شام العلم والبركة؛ شهدت أروقة الجامع الأموي مجالس دار الحديث الأشرفية وتصنيف أعظم شروح الحديث.",
-      scholar: "الإمام يحيى بن شرف النووي — صاحب رياض الصالحين والأربعين النووية.",
-      badge: "وسام محدّث الشام 💎"
-    },
-    {
-      id: 6,
-      name: "قرطبة",
-      landmark: "منارة الأندلس — خزانة الحكم ودرة المغرب",
-      pagesRequired: 400,
-      icon: "🏰",
-      desc: "مدينة النور التي أضاءت ظلمات القرون الوسطى بمكتبتها الكبرى وجامعها الفريد، وشهدت نهضة علمية لا نظير لها.",
-      scholar: "الإمام ابن حزم الأندلسي وشمس الدين القرطبي صاحب التفسير الجامع.",
-      badge: "وسام شمس الأندلس 🏆"
-    }
-  ];
-
-  // توليد شجرة النخلة SVG حسب عدد الصفحات
-  function generateOasisTreeSvg(totalPages) {
-    let stage = 1;
-    let height = 120;
-    let trunkColor = "#854d0e";
-    let datesHtml = "";
-
-    if (totalPages >= 300) {
-      stage = 5;
-      height = 200;
-      trunkColor = "#713f12";
-      datesHtml = `
-        <circle cx="85" cy="85" r="7" fill="#f59e0b" filter="drop-shadow(0 0 4px #fbbf24)"/>
-        <circle cx="95" cy="90" r="7" fill="#d97706" />
-        <circle cx="105" cy="85" r="7" fill="#f59e0b" />
-        <circle cx="95" cy="100" r="8" fill="#b45309" filter="drop-shadow(0 0 6px #f59e0b)"/>
-      `;
-    } else if (totalPages >= 150) {
-      stage = 4;
-      height = 180;
-      datesHtml = `
-        <circle cx="90" cy="90" r="6" fill="#f59e0b" />
-        <circle cx="100" cy="95" r="6" fill="#d97706" />
-      `;
-    } else if (totalPages >= 70) {
-      stage = 3;
-      height = 150;
-    } else if (totalPages >= 25) {
-      stage = 2;
-      height = 120;
-    } else {
-      stage = 1;
-      height = 90;
-    }
-
-    return `
-      <svg class="oasis-tree-svg" width="190" height="${height}" viewBox="0 0 190 ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Trunk -->
-        <path d="M95 ${height} C92 ${height*0.7} 90 ${height*0.4} 95 70 C98 70 102 70 95 70" stroke="${trunkColor}" stroke-width="${12 + stage*2}" stroke-linecap="round"/>
-        <!-- Fronds (سعف النخل) -->
-        <path d="M95 70 Q60 50 20 85" stroke="#16a34a" stroke-width="7" stroke-linecap="round" fill="none"/>
-        <path d="M95 70 Q70 30 35 35" stroke="#22c55e" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M95 70 Q95 10 95 5" stroke="#4ade80" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M95 70 Q120 30 155 35" stroke="#22c55e" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M95 70 Q130 50 170 85" stroke="#16a34a" stroke-width="7" stroke-linecap="round" fill="none"/>
-        ${datesHtml}
-      </svg>
-    `;
-  }
-
-  // حساب مرحلة الواحة
-  function getOasisStageInfo(totalPages) {
-    if (totalPages >= 300) return { title: "واحة الفرسان الكبرى 👑", desc: "نخلة يانعة مثمرة بقنوان الرطب الذهبي!", stage: 5 };
-    if (totalPages >= 150) return { title: "نخلة باسقة ومثمرة 🌴✨", desc: "أثمرت قراءتك رطباً جنياً يبهج القلب!", stage: 4 };
-    if (totalPages >= 70) return { title: "فسيلة نخل يافعة 🌴", desc: "اشتد ساق النخلة وعلا سعفها نحو النور!", stage: 3 };
-    if (totalPages >= 25) return { title: "شتلة خضراء فتية 🌿", desc: "نبتت غرسة القراءة وبدأت تخضر أوراقها!", stage: 2 };
-    return { title: "بذرة الغرس الأولى 🌱", desc: "بداية الرحلة في غرس حب القراءة والمعرفة!", stage: 1 };
-  }
-
   // تبديل تبويبات قسم إبداع
   function switchIbdaTab(tabName) {
     document.querySelectorAll('.ibda-tab-btn').forEach(b => {
@@ -143,9 +24,8 @@ window.IbdaHub = (function () {
       s.classList.toggle('active', s.id === `ibda-subtab-${tabName}`);
     });
 
-    if (tabName === 'race') loadRaceData();
     if (tabName === 'gems') loadGems();
-    if (tabName === 'capsules') loadCapsules();
+    if (tabName === 'capsule') loadCapsules();
   }
 
   // تحميل درر القراءة
@@ -279,7 +159,7 @@ window.IbdaHub = (function () {
                   <audio controls src="${currentAudioDataUrl}" style="width:100%; height:40px;"></audio>
                   <div style="margin-top:0.75rem; display:flex; gap:0.5rem; justify-content:center;">
                     <button type="button" class="ibda-btn-action" onclick="IbdaHub.sendCapsule()">
-                      <span>إرسال الكبسولة للمعلم</span> 🚀
+                      <span>إرسال الكبسولة</span> 🚀
                     </button>
                     <button type="button" class="ibda-btn-secondary" onclick="IbdaHub.resetRecorder()">
                       <span>إعادة التسجيل</span> 🔄
@@ -357,7 +237,7 @@ window.IbdaHub = (function () {
       });
       const data = await res.json();
       if (data.success) {
-        alert('رائع جداً! تم تسليم كبسولتك الصوتية لمعلمك بنجاح 🎙️✨');
+        alert('رائع جداً! تم حفظ وإرسال كبسولتك الصوتية بنجاح 🎙️✨');
         resetRecorder();
         loadCapsules();
       }
@@ -392,46 +272,6 @@ window.IbdaHub = (function () {
     }
   }
 
-  // تحميل بيانات السباق الحي للمسجد
-  async function loadRaceData() {
-    const container = document.getElementById('ibdaRaceLanesContainer');
-    if (!container) return;
-    try {
-      const res = await fetch('/api/ibda/race-data');
-      const data = await res.json();
-      if (!data.success || !data.racers || data.racers.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">جاري تهيئة مضمار السباق...</div>';
-        return;
-      }
-
-      container.innerHTML = data.racers.map((r, idx) => {
-        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🏇';
-        return `
-          <div class="race-lane" style="border-right: 4px solid ${r.color};">
-            <div class="race-lane-info">
-              <div class="race-lane-name">
-                <span>${medal}</span>
-                <span>${escapeHtml(r.name)}</span>
-                <span style="font-size:0.8rem; color:#94a3b8;">(${r.studentsCount} طالب)</span>
-              </div>
-              <div class="race-lane-score">
-                <span>${r.totalScore} نقطة تميز</span>
-                <span style="font-size:0.8rem; color:#10b981; margin-right:8px;">(${r.readingPages} ص)</span>
-              </div>
-            </div>
-            <div class="race-track-bar">
-              <div class="race-track-progress" style="width: ${Math.max(8, r.progressPercent)}%; background: ${r.color};">
-                <span class="race-horse-marker">${r.icon || '🏇'}</span>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } catch (e) {
-      console.warn('loadRaceData error:', e);
-    }
-  }
-
   // مولّد كود QR للكتب
   function generateBookQr() {
     const input = document.getElementById('ibdaBookQrInput');
@@ -459,7 +299,7 @@ window.IbdaHub = (function () {
     `;
   }
 
-  // توليد مجلة إبداع الأسبوعية
+  // توليد صحيفة إبداع الأسبوعية
   async function generateMagazine() {
     const container = document.getElementById('ibdaMagazinePreviewArea');
     if (!container) return;
@@ -521,33 +361,6 @@ window.IbdaHub = (function () {
     `;
   }
 
-  // فتح نافذة تفاصيل محطة في خريطة العلماء
-  function openStationModal(stationId) {
-    const s = SCHOLARS_STATIONS.find(x => x.id === stationId);
-    if (!s) return;
-    alert(`🗺️ [${s.name} — ${s.landmark}]\n\n📖 الأثر التاريخي:\n${s.desc}\n\n🌟 من أعلامها:\n${s.scholar}\n\n🎖️ الشارة: ${s.badge}`);
-  }
-
-  // تفاعل سقيا الواحة
-  function waterOasis() {
-    const box = document.getElementById('oasisWaterSplash');
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = '💧💦🌿 ما شاء الله! سُقيت الواحة واخضوضرت أغصانها!';
-      setTimeout(() => box.style.display = 'none', 3000);
-    }
-  }
-
-  // جني الرطب
-  function harvestDates() {
-    const box = document.getElementById('oasisWaterSplash');
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = '🍯✨ هنيئاً لك! جنيت رطباً جنياً من ثمار قراءتك ومثابرتك!';
-      setTimeout(() => box.style.display = 'none', 3000);
-    }
-  }
-
   // مساعدة لتفادي XSS
   function escapeHtml(str) {
     if (!str) return '';
@@ -559,43 +372,25 @@ window.IbdaHub = (function () {
       .replace(/'/g, '&#039;');
   }
 
-  // توليد HTML الكامل لواجهة إبداع
-  function renderIbdaFullHtml(studentData = {}) {
-    const totalPages = parseInt(studentData.totalPages || studentData.pages || 0, 10);
-    const oasisInfo = getOasisStageInfo(totalPages);
-    const treeSvg = generateOasisTreeSvg(totalPages);
-
+  // توليد HTML الكامل لواجهة إبداع (فقط الميزات الـ 4 المطلوبة)
+  function renderIbdaFullHtml(userData = {}) {
     return `
       <div class="ibda-container">
         <!-- Banner -->
         <div class="ibda-hero-banner">
           <div class="ibda-hero-title-group">
             <h2><span class="sparkle">✨</span> واحة إبداع وتألق القراء</h2>
-            <p>تجارب استثنائية، محطات تاريخية، درر مسطرة، وسباقات حماسية تليق بأهل القرآن</p>
-          </div>
-          <div class="ibda-hero-actions">
-            <a href="race.html" target="_blank" class="ibda-btn-action">
-              <span>شاشة سباق المسجد المباشر</span> 🏁
-            </a>
+            <p>كبسولات الفائدة الصوتية، درر القراءة، ملصقات QR الذكية للكتب، وصحيفة الأسبوع الحائطية</p>
           </div>
         </div>
 
-        <!-- Sub Tabs Nav -->
+        <!-- Sub Tabs Nav (4 Items Only) -->
         <div class="ibda-tabs-nav">
-          <button type="button" class="ibda-tab-btn active" data-subtab="oasis" onclick="IbdaHub.switchIbdaTab('oasis')">
-            <span>🌴</span> <span>واحة القارئ</span>
-          </button>
-          <button type="button" class="ibda-tab-btn" data-subtab="capsule" onclick="IbdaHub.switchIbdaTab('capsule')">
+          <button type="button" class="ibda-tab-btn active" data-subtab="capsule" onclick="IbdaHub.switchIbdaTab('capsule')">
             <span>🎙️</span> <span>كبسولة الفائدة</span>
-          </button>
-          <button type="button" class="ibda-tab-btn" data-subtab="map" onclick="IbdaHub.switchIbdaTab('map')">
-            <span>🗺️</span> <span>طريق العلماء</span>
           </button>
           <button type="button" class="ibda-tab-btn" data-subtab="gems" onclick="IbdaHub.switchIbdaTab('gems')">
             <span>💎</span> <span>حائط الدرر</span>
-          </button>
-          <button type="button" class="ibda-tab-btn" data-subtab="race" onclick="IbdaHub.switchIbdaTab('race')">
-            <span>🏇</span> <span>سباق الحلقات</span>
           </button>
           <button type="button" class="ibda-tab-btn" data-subtab="qr" onclick="IbdaHub.switchIbdaTab('qr')">
             <span>🖨️</span> <span>ملصقات QR للكتب</span>
@@ -605,65 +400,12 @@ window.IbdaHub = (function () {
           </button>
         </div>
 
-        <!-- 1. واحة القارئ -->
-        <div class="ibda-section active" id="ibda-subtab-oasis">
-          <div class="oasis-stage-card">
-            <div class="oasis-sky-stars"></div>
-            <div style="font-size:1.35rem; font-weight:900; color:#fbbf24; margin-bottom:0.25rem;">
-              ${oasisInfo.title}
-            </div>
-            <div style="font-size:0.92rem; color:#cbd5e1; margin-bottom:1.5rem;">
-              ${oasisInfo.desc}
-            </div>
-
-            <div class="oasis-visual-wrap">
-              ${treeSvg}
-              <div class="oasis-ground"></div>
-            </div>
-
-            <div id="oasisWaterSplash" style="display:none; font-size:1.1rem; font-weight:800; color:#38bdf8; margin:1rem 0;" class="water-splash-anim"></div>
-
-            <div class="oasis-stats-row">
-              <div class="oasis-stat-box">
-                <div class="icon">📄</div>
-                <div>
-                  <div class="val">${totalPages}</div>
-                  <div class="lbl">صفحة مروية</div>
-                </div>
-              </div>
-              <div class="oasis-stat-box">
-                <div class="icon">🍯</div>
-                <div>
-                  <div class="val">${Math.floor(totalPages / 15)}</div>
-                  <div class="lbl">رطبة ذهبية مجنية</div>
-                </div>
-              </div>
-              <div class="oasis-stat-box">
-                <div class="icon">⭐</div>
-                <div>
-                  <div class="val">المستوى ${oasisInfo.stage}</div>
-                  <div class="lbl">رتبة الواحة</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="oasis-interact-bar">
-              <button type="button" class="ibda-btn-action" onclick="IbdaHub.waterOasis()">
-                <span>سقيا الواحة</span> 💧
-              </button>
-              <button type="button" class="ibda-btn-secondary" onclick="IbdaHub.harvestDates()">
-                <span>جني الرطب الذهبي</span> 🍯
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. كبسولة الفائدة الصوتية -->
-        <div class="ibda-section" id="ibda-subtab-capsule">
+        <!-- 1. كبسولة الفائدة الصوتية -->
+        <div class="ibda-section active" id="ibda-subtab-capsule">
           <div class="recorder-card">
             <h3 style="font-size:1.4rem; font-weight:900; color:#fff; margin-top:0;">🎙️ كبسولة الفائدة الصوتية السريعة</h3>
             <p style="color:#cbd5e1; font-size:0.92rem; max-width:600px; margin:0 auto 1.5rem auto;">
-              سجّل فائدة صوتية ملهمة (30 إلى 60 ثانية) من قراءتك اليومية لتوثيق فهمك وتصل لمعلمك وزملائك بضغطة زر!
+              تسجيل فوائد صوتية ملهمة (30 إلى 60 ثانية) من قراءات الكتب لتوثيق الفهم والاستماع إليها في أي وقت!
             </p>
 
             <div style="max-width:400px; margin:0 auto 1.5rem auto; text-align:right;">
@@ -687,7 +429,7 @@ window.IbdaHub = (function () {
 
             <div style="margin-top:2.5rem; text-align:right;">
               <h4 style="color:#f8fafc; font-size:1.1rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.5rem;">
-                🎧 كبسولات صوتية سابقة من الطلاب:
+                🎧 كبسولات صوتية مسجلة من الطلاب:
               </h4>
               <div class="capsules-list" id="ibdaCapsulesList">
                 <div style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:1.5rem;">جاري تحميل الكبسولات...</div>
@@ -696,45 +438,12 @@ window.IbdaHub = (function () {
           </div>
         </div>
 
-        <!-- 3. طريق العلماء -->
-        <div class="ibda-section" id="ibda-subtab-map">
-          <div class="scholars-map-container">
-            <h3 style="font-size:1.4rem; font-weight:900; color:#fbbf24; margin-top:0;">🗺️ خريطة طريق العلماء — مسار القارئ التاريخي</h3>
-            <p style="color:#cbd5e1; font-size:0.92rem; margin-bottom:2rem;">
-              كلما قرأت صفحات أكثر، تقدمت قافلتك بين الحواضر العلمية التاريخية من مكة المكرمة إلى قرطبة، وفُتحت لك أسرار مكتباتها!
-            </p>
-
-            <div class="scholars-timeline">
-              ${SCHOLARS_STATIONS.map((st, idx) => {
-                const isUnlocked = totalPages >= st.pagesRequired;
-                const isNext = !isUnlocked && (idx === 0 || totalPages >= SCHOLARS_STATIONS[idx - 1].pagesRequired);
-                return `
-                  <div class="station-node ${isUnlocked ? 'unlocked' : ''} ${isNext ? 'active-now' : ''}" onclick="IbdaHub.openStationModal(${st.id})">
-                    <div class="station-icon-wrap">${isUnlocked ? st.icon : '🔒'}</div>
-                    <div class="station-details">
-                      <div class="station-name">
-                        <span>${st.name}</span>
-                        ${isUnlocked ? '<span style="color:#10b981; font-size:0.8rem;">(مفتوحة ✅)</span>' : `<span style="color:#f59e0b; font-size:0.75rem;">(تتطلب ${st.pagesRequired} ص)</span>`}
-                      </div>
-                      <div class="station-landmark">${st.landmark}</div>
-                      <div class="station-desc">${st.desc}</div>
-                      <div style="margin-top:0.4rem; font-size:0.8rem; font-weight:800; color:#38bdf8;">
-                        🎖️ ${st.badge}
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. حائط الدرر -->
+        <!-- 2. حائط الدرر -->
         <div class="ibda-section" id="ibda-subtab-gems">
           <div class="ibda-card">
             <h3 style="font-size:1.4rem; font-weight:900; color:#fff; margin-top:0;">💎 حائط درر القراءة والفوائد</h3>
             <p style="color:#cbd5e1; font-size:0.92rem; margin-bottom:1.5rem;">
-              اكتب سطرك الملهم من قراءتك اليوم لتلهم به زملاءك وتنافس على درّة الأسبوع!
+              الفوائد والاقتباسات المسطرة من قراءات الطلاب مع إمكانية التفاعل بالدرر والإعجاب!
             </p>
 
             <!-- Add Gem Form -->
@@ -754,31 +463,7 @@ window.IbdaHub = (function () {
           </div>
         </div>
 
-        <!-- 5. سباق الحلقات التفاعلي للمسجد -->
-        <div class="ibda-section" id="ibda-subtab-race">
-          <div class="mosque-race-wrap">
-            <div class="mosque-race-header">
-              <h2>🏇 مضمار سباق الحلقات التفاعلي 🏁</h2>
-              <p style="color:#94a3b8; margin-top:0.5rem;">
-                السباق التنافسي المباشر لشاشات المسجد والبروجكتر — تقدم لحظي بنقاط وصفحات القراءة
-              </p>
-              <div style="margin-top:1rem; display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap;">
-                <button type="button" class="ibda-btn-action" onclick="IbdaHub.loadRaceData()">
-                  <span>تحديث السباق</span> 🔄
-                </button>
-                <a href="race.html" target="_blank" class="ibda-btn-secondary">
-                  <span>فتح شاشة العرض المستقلة للمسجد (Fullscreen)</span> 📺
-                </a>
-              </div>
-            </div>
-
-            <div class="race-lanes-container" id="ibdaRaceLanesContainer">
-              <div style="text-align:center; color:#94a3b8; padding:2rem;">جاري تحميل بيانات السباق...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 6. مولّد ملصقات QR الذكية للكتب -->
+        <!-- 3. مولّد ملصقات QR الذكية للكتب -->
         <div class="ibda-section" id="ibda-subtab-qr">
           <div class="ibda-card">
             <h3 style="font-size:1.4rem; font-weight:900; color:#fff; margin-top:0;">🖨️ مولّد ملصقات QR الذكية لكتب المكتبة</h3>
@@ -799,7 +484,7 @@ window.IbdaHub = (function () {
           </div>
         </div>
 
-        <!-- 7. صحيفة إبداع الأسبوعية -->
+        <!-- 4. صحيفة إبداع الأسبوعية -->
         <div class="ibda-section" id="ibda-subtab-magazine">
           <div class="ibda-card">
             <h3 style="font-size:1.4rem; font-weight:900; color:#fff; margin-top:0;">📰 صحيفة إبداع الأسبوعية (نشرة الحلقات الحائطية)</h3>
@@ -833,11 +518,7 @@ window.IbdaHub = (function () {
     resetRecorder,
     sendCapsule,
     loadCapsules,
-    loadRaceData,
     generateBookQr,
-    generateMagazine,
-    openStationModal,
-    waterOasis,
-    harvestDates
+    generateMagazine
   };
 })();

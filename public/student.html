@@ -218,7 +218,7 @@
           <div class="chat-contact-avatar teacher" id="studentTeacherAvatar">م</div>
           <div>
             <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);" id="studentTeacherName">المعلم</div>
-            <div style="font-size: 0.78rem; color: var(--text-muted);">👨‍🏫 معلم المنصة — متصل</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">مراسلة وتواصل مباشر</div>
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -226,6 +226,17 @@
           <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="refreshStudentActiveChat()">🔄 تحديث</button>
           <button type="button" class="dev-modal-close-btn" onclick="closeStudentChatModal()" title="إغلاق">✕</button>
         </div>
+      </div>
+
+      <!-- اختيار المستلم: معلم اقرأ أو مدير نقاطي -->
+      <div id="studentRecipientSelectorRow" style="padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+          <span>المُوجّه إليه:</span>
+        </label>
+        <select id="studentRecipientSelect" class="form-control" style="padding: 5px 12px; font-size: 0.88rem; width: auto; font-weight: 700;" onchange="handleStudentRecipientChange(this.value)">
+          <option value="iqra_teacher">👨‍🏫 معلم القراءة (منصة اقرأ)</option>
+          <option value="director">👑 مدير المنظومة (منظومة نقاطي)</option>
+        </select>
       </div>
 
       <!-- قائمة اختيار المعلم إذا كان هناك أكثر من معلم -->

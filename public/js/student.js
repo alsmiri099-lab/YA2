@@ -197,8 +197,14 @@ function loadStudentDashboard() {
   // Polling unread messages count every 15s
   setInterval(() => {
     loadStudentUnreadCount();
-    if (studentActiveTeacherId && isStudentChatModalOpen) {
-      loadStudentChatMessages(studentActiveTeacherId, true);
+    if (isStudentChatModalOpen) {
+      const recSelect = document.getElementById('studentRecipientSelect');
+      const isDirector = recSelect && recSelect.value === 'director';
+      if (isDirector) {
+        loadStudentDirectorMessages();
+      } else if (studentActiveTeacherId) {
+        loadStudentChatMessages(studentActiveTeacherId, true);
+      }
     }
   }, 15000);
 }
@@ -882,55 +888,22 @@ async function openStudentChatModal() {
       headers: getAuthHeaders()
     });
 
-    if (!res.ok) throw new Error('تعذر تحميل المحادثات');
-
-    const data = await res.json();
-    const convos = data.conversations || [];
-
-    studentTeachersList = convos.map(c => c.user);
-
-    if (studentTeachersList.length === 0) {
-      if (bodyEl) {
-        bodyEl.innerHTML = `
-          <div class="empty-state" style="padding: 40px 20px;">
-            <div style="font-size: 2.5rem; margin-bottom: 8px;">👨‍🏫</div>
-            <div style="font-weight: 700; color: var(--text-main);">لم يتم العثور على معلم مسجل</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">سيتمكن المعلم من التواصل معك فور تسجيله.</div>
-          </div>
-        `;
-      }
-      return;
+    if (res.ok) {
+      const data = await res.json();
+      const convos = data.conversations || [];
+      studentTeachersList = convos.map(c => c.user);
+    } else {
+      studentTeachersList = [];
     }
 
-    // إذا كان هناك أكثر من معلم، نظهر قائمة اختيار المعلم
-    const selectorRow = document.getElementById('studentTeacherSelectorRow');
-    const selectEl = document.getElementById('studentTeacherSelect');
+    const recipientSelect = document.getElementById('studentRecipientSelect');
+    const currentRecipient = recipientSelect ? recipientSelect.value : 'iqra_teacher';
 
-    if (studentTeachersList.length > 1 && selectorRow && selectEl) {
-      selectorRow.style.display = 'flex';
-      selectEl.innerHTML = studentTeachersList.map(t => `<option value="${t.id}">${escapeHtml(t.fullName)}</option>`).join('');
-    } else if (selectorRow) {
-      selectorRow.style.display = 'none';
+    if (currentRecipient === 'director') {
+      await handleStudentRecipientChange('director');
+    } else {
+      await setupTeacherChatView();
     }
-
-    // تحديد المعلم الافتراضي (الأول في القائمة أو صاحب آخر رسالة)
-    if (!studentActiveTeacherId || !studentTeachersList.some(t => t.id.toString() === studentActiveTeacherId.toString())) {
-      studentActiveTeacherId = studentTeachersList[0].id.toString();
-    }
-
-    const currentTeacher = studentTeachersList.find(t => t.id.toString() === studentActiveTeacherId.toString()) || studentTeachersList[0];
-
-    // تحديث بيانات المعلم في الهيدر
-    const nameEl = document.getElementById('studentTeacherName');
-    const avatarEl = document.getElementById('studentTeacherAvatar');
-    if (nameEl) nameEl.textContent = `المعلم: ${currentTeacher.fullName}`;
-    if (avatarEl) avatarEl.textContent = (currentTeacher.fullName || 'م').trim().charAt(0);
-
-    // جلب الرسائل
-    await loadStudentChatMessages(studentActiveTeacherId);
-
-    // تحديد الرسائل كمقروءة
-    markStudentChatRead(studentActiveTeacherId);
 
     setTimeout(() => {
       const input = document.getElementById('studentChatMessageInput');
@@ -941,6 +914,159 @@ async function openStudentChatModal() {
     console.error('Error opening chat modal:', err);
     if (bodyEl) bodyEl.innerHTML = '<div class="empty-state">حدث خطأ في تحميل المحادثة.</div>';
   }
+}
+
+// إعداد واجهة مراسلة المعلم
+async function setupTeacherChatView() {
+  const bodyEl = document.getElementById('studentChatMessagesBody');
+  const selectorRow = document.getElementById('studentTeacherSelectorRow');
+  const selectEl = document.getElementById('studentTeacherSelect');
+  const nameEl = document.getElementById('studentTeacherName');
+  const avatarEl = document.getElementById('studentTeacherAvatar');
+  const clearBtn = document.querySelector('.btn-chat-clear');
+
+  if (clearBtn) clearBtn.style.display = 'inline-block';
+
+  if (studentTeachersList.length === 0) {
+    if (selectorRow) selectorRow.style.display = 'none';
+    if (nameEl) nameEl.textContent = 'معلم منصة اقرأ';
+    if (avatarEl) {
+      avatarEl.textContent = '👨‍🏫';
+      avatarEl.style.background = '';
+    }
+    if (bodyEl) {
+      bodyEl.innerHTML = `
+        <div class="empty-state" style="padding: 40px 20px;">
+          <div style="font-size: 2.5rem; margin-bottom: 8px;">👨‍🏫</div>
+          <div style="font-weight: 700; color: var(--text-main);">لم يتم العثور على معلم مسجل</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">يمكنك مراسلة مدير منظومة نقاطي من قائمة المُوجّه إليه في الأعلى.</div>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  if (studentTeachersList.length > 1 && selectorRow && selectEl) {
+    selectorRow.style.display = 'flex';
+    selectEl.innerHTML = studentTeachersList.map(t => `<option value="${t.id}">${escapeHtml(t.fullName)}</option>`).join('');
+  } else if (selectorRow) {
+    selectorRow.style.display = 'none';
+  }
+
+  if (!studentActiveTeacherId || !studentTeachersList.some(t => t.id.toString() === studentActiveTeacherId.toString())) {
+    studentActiveTeacherId = studentTeachersList[0].id.toString();
+  }
+
+  const currentTeacher = studentTeachersList.find(t => t.id.toString() === studentActiveTeacherId.toString()) || studentTeachersList[0];
+
+  if (nameEl) nameEl.textContent = `المعلم: ${currentTeacher.fullName}`;
+  if (avatarEl) {
+    avatarEl.textContent = (currentTeacher.fullName || 'م').trim().charAt(0);
+    avatarEl.style.background = '';
+  }
+
+  await loadStudentChatMessages(studentActiveTeacherId);
+  markStudentChatRead(studentActiveTeacherId);
+}
+
+// التبديل بين مراسلة معلم اقرأ ومدير نقاطي
+async function handleStudentRecipientChange(val) {
+  const selectorRow = document.getElementById('studentTeacherSelectorRow');
+  const nameEl = document.getElementById('studentTeacherName');
+  const avatarEl = document.getElementById('studentTeacherAvatar');
+  const input = document.getElementById('studentChatMessageInput');
+  const clearBtn = document.querySelector('.btn-chat-clear');
+
+  if (val === 'director') {
+    if (selectorRow) selectorRow.style.display = 'none';
+    if (nameEl) nameEl.textContent = '👑 مدير منظومة نقاطي العام';
+    if (avatarEl) {
+      avatarEl.textContent = '👑';
+      avatarEl.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+    }
+    if (input) input.placeholder = 'اكتب رسالتك أو استفسارك لمدير منظومة نقاطي...';
+    if (clearBtn) clearBtn.style.display = 'none';
+    await loadStudentDirectorMessages();
+  } else {
+    if (input) input.placeholder = 'اكتب رسالتك أو استفسارك لمعلم القراءة...';
+    await setupTeacherChatView();
+  }
+}
+
+// جلب رسائل الطالب الموجهة لمدير المنظومة
+async function loadStudentDirectorMessages() {
+  const bodyEl = document.getElementById('studentChatMessagesBody');
+  if (!bodyEl) return;
+  bodyEl.innerHTML = '<div class="empty-state">جاري تحميل رسائل الإدارة...</div>';
+
+  try {
+    const user = getUser();
+    const studentId = user ? user.id : '';
+    const res = await fetch(`${API_BASE}/student-messages?studentId=${studentId}&recipient=director`);
+    if (!res.ok) throw new Error('فشل جلب الرسائل');
+    const data = await res.json();
+    const msgs = data.messages || [];
+    renderStudentDirectorChat(msgs);
+  } catch (err) {
+    console.error('Error loading director messages:', err);
+    bodyEl.innerHTML = '<div class="empty-state">حدث خطأ في جلب الرسائل من الإدارة.</div>';
+  }
+}
+
+// عرض رسائل الطالب وردود المدير العام
+function renderStudentDirectorChat(messages) {
+  const bodyEl = document.getElementById('studentChatMessagesBody');
+  if (!bodyEl) return;
+
+  if (messages.length === 0) {
+    bodyEl.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px;">
+        <div style="font-size: 2.5rem; margin-bottom: 8px;">👑</div>
+        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">التواصل مع مدير منظومة نقاطي</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">اكتب رسالتك، اقتراحك، أو استفسارك العام للإدارة وسيرد عليك المدير بإذن الله.</div>
+      </div>
+    `;
+    return;
+  }
+
+  bodyEl.innerHTML = messages.map(msg => {
+    let timeFormatted = '';
+    const dateVal = msg.created_at || msg.createdAt;
+    if (dateVal) {
+      try {
+        const d = new Date(dateVal);
+        timeFormatted = d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {}
+    }
+
+    const replyHtml = msg.reply ? `
+      <div class="chat-msg-row incoming" style="margin-top: 6px;">
+        <div class="chat-msg-bubble" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--text-main);">
+          <div style="font-size: 0.75rem; font-weight: 800; color: #10b981; margin-bottom: 4px; display:flex; align-items:center; gap:4px;">
+            <span>👑 رد المدير العام:</span>
+          </div>
+          <div>${escapeHtml(msg.reply)}</div>
+        </div>
+      </div>
+    ` : `
+      <div style="font-size: 0.72rem; color: var(--text-muted); text-align: left; padding: 2px 8px;">⏳ بانتظار رد المدير...</div>
+    `;
+
+    return `
+      <div class="chat-msg-row outgoing" style="margin-bottom: 12px;">
+        <div class="chat-msg-bubble">
+          <div style="font-size: 0.72rem; opacity: 0.85; margin-bottom: 3px; font-weight: 700;">إلى مدير نقاطي 👑</div>
+          <div>${escapeHtml(msg.message)}</div>
+        </div>
+        <div class="chat-msg-meta">
+          <span>${timeFormatted}</span>
+        </div>
+        ${replyHtml}
+      </div>
+    `;
+  }).join('');
+
+  bodyEl.scrollTop = bodyEl.scrollHeight;
 }
 
 // إغلاق نافذة المحادثة
@@ -976,7 +1102,11 @@ function handleStudentTeacherChange(teacherId) {
 
 // تحديث المحادثة
 function refreshStudentActiveChat() {
-  if (studentActiveTeacherId) {
+  const recipientSelect = document.getElementById('studentRecipientSelect');
+  const recipient = recipientSelect ? recipientSelect.value : 'iqra_teacher';
+  if (recipient === 'director') {
+    loadStudentDirectorMessages();
+  } else if (studentActiveTeacherId) {
     loadStudentChatMessages(studentActiveTeacherId);
   }
 }
@@ -1124,14 +1254,12 @@ function handleStudentChatInputKeydown(event) {
   }
 }
 
-// إرسال رسالة من الطالب للمعلم
+// إرسال رسالة من الطالب (للمعلم أو للمدير)
 async function handleSendStudentMessage(event) {
   if (event) event.preventDefault();
 
-  if (!studentActiveTeacherId) {
-    alert('يرجى اختيار معلم أولاً');
-    return;
-  }
+  const recipientSelect = document.getElementById('studentRecipientSelect');
+  const recipient = recipientSelect ? recipientSelect.value : 'iqra_teacher';
 
   const input = document.getElementById('studentChatMessageInput');
   if (!input) return;
@@ -1143,24 +1271,55 @@ async function handleSendStudentMessage(event) {
   if (sendBtn) sendBtn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/messages/send`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        receiverId: studentActiveTeacherId,
-        content: content
-      })
-    });
+    if (recipient === 'director') {
+      const user = getUser();
+      const res = await fetch(`${API_BASE}/student-messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          studentId: user ? user.id : 'unknown',
+          studentName: user ? user.fullName : 'طالب',
+          classId: user ? user.classId : null,
+          category: 'general',
+          message: content,
+          recipient: 'director'
+        })
+      });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'فشل إرسال الرسالة');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل إرسال الرسالة إلى المدير');
 
-    input.value = '';
-    input.style.height = 'auto';
+      input.value = '';
+      input.style.height = 'auto';
+      await loadStudentDirectorMessages();
+    } else {
+      if (!studentActiveTeacherId) {
+        alert('يرجى اختيار معلم أولاً');
+        return;
+      }
 
-    if (data.data) {
-      studentActiveMessages.push(data.data);
-      renderStudentMessages(studentActiveMessages);
+      const res = await fetch(`${API_BASE}/messages/send`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          receiverId: studentActiveTeacherId,
+          content: content
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل إرسال الرسالة');
+
+      input.value = '';
+      input.style.height = 'auto';
+
+      if (data.data) {
+        studentActiveMessages.push(data.data);
+        renderStudentMessages(studentActiveMessages);
+      }
     }
   } catch (err) {
     alert(err.message || 'حدث خطأ أثناء إرسال الرسالة');

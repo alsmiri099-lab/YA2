@@ -334,6 +334,38 @@ async function getRaceData() {
   return { racers, maxScore, updatedAt: new Date().toISOString() };
 }
 
+// --- رسائل وإشعارات الطلاب المتبادلة بين نقاطي واقرأ ---
+async function getStudentMessages({ studentId, recipient } = {}) {
+  let query = 'SELECT * FROM student_messages';
+  const params = [];
+  const where = [];
+  if (studentId) {
+    params.push(studentId);
+    where.push(`student_id = $${params.length}`);
+  }
+  if (recipient) {
+    params.push(recipient);
+    where.push(`recipient = $${params.length}`);
+  }
+  if (where.length > 0) {
+    query += ' WHERE ' + where.join(' AND ');
+  }
+  query += ' ORDER BY created_at DESC LIMIT 100';
+  const result = await pool.query(query, params);
+  return result.rows;
+}
+
+async function sendStudentMessage({ studentId, studentName, classId, message, category, surahName, pagesCount, recipient }) {
+  const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+  const nowMs = Date.now();
+  const finalRecipient = recipient === 'iqra_teacher' ? 'iqra_teacher' : 'director';
+  await pool.query(`
+    INSERT INTO student_messages (id, student_id, student_name, class_id, message, category, surah_name, pages_count, status, created_at, recipient)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10)
+  `, [msgId, studentId, studentName || 'طالب', classId || null, (message || '').trim(), category || 'general', surahName || '', parseFloat(pagesCount) || 0, nowMs, finalRecipient]);
+  return { id: msgId, recipient: finalRecipient };
+}
+
 module.exports = {
   getSettings,
   saveSettings,
@@ -349,5 +381,7 @@ module.exports = {
   getIbdaCapsules,
   addIbdaCapsule,
   getRaceData,
+  getStudentMessages,
+  sendStudentMessage,
   DEFAULT_SETTINGS
 };

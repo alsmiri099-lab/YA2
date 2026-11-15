@@ -713,6 +713,34 @@ app.get('/api/ibda/race-data', async (req, res) => {
   }
 });
 
+// 7. رسائل وإشعارات الطلاب الموجهة للمدير أو المعلم
+app.get('/api/student-messages', async (req, res) => {
+  try {
+    const rows = await naqati.getStudentMessages({
+      studentId: req.query.studentId,
+      recipient: req.query.recipient
+    });
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/student-messages', async (req, res) => {
+  const { studentId, studentName, classId, message, category, surahName, pagesCount, recipient } = req.body || {};
+  if (!studentId || !message) {
+    return res.status(400).json({ error: 'studentId and message are required' });
+  }
+  try {
+    const r = await naqati.sendStudentMessage({
+      studentId, studentName, classId, message, category, surahName, pagesCount, recipient
+    });
+    res.json({ success: true, ...r });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Fallback to serving main html for client routing
 app.get('*', (req, res) => {
 
