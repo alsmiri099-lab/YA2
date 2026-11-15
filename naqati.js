@@ -221,6 +221,119 @@ async function ping() {
   return r.rows[0].n;
 }
 
+// --- قسم إبداع (IBDA HUB) ---
+async function getIbdaGems(classId) {
+  let q = 'SELECT * FROM ibda_gems ORDER BY created_at DESC LIMIT 60';
+  let params = [];
+  if (classId) {
+    q = 'SELECT * FROM ibda_gems WHERE class_id = $1 ORDER BY created_at DESC LIMIT 60';
+    params = [classId];
+  }
+  const r = await pool.query(q, params);
+  return r.rows;
+}
+
+async function addIbdaGem({ studentId, studentName, classId, bookTitle, gemText }) {
+  const r = await pool.query(`
+    INSERT INTO ibda_gems (student_id, student_name, class_id, book_title, gem_text)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
+  `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', gemText.trim()]);
+  return r.rows[0];
+}
+
+async function reactIbdaGem(gemId, type) {
+  const col = type === 'like' ? 'likes_count' : 'gems_count';
+  const r = await pool.query(`
+    UPDATE ibda_gems
+    SET ${col} = COALESCE(${col}, 0) + 1
+    WHERE id = $1
+    RETURNING id, likes_count, gems_count
+  `, [parseInt(gemId, 10)]);
+  return r.rows[0];
+}
+
+async function getIbdaCapsules({ classId, studentId } = {}) {
+  let q = 'SELECT id, student_id, student_name, class_id, book_title, duration_sec, note, created_at, audio_data FROM ibda_capsules';
+  let where = [];
+  let params = [];
+  if (classId) {
+    params.push(classId);
+    where.push(`class_id = $${params.length}`);
+  }
+  if (studentId) {
+    params.push(studentId);
+    where.push(`student_id = $${params.length}`);
+  }
+  if (where.length > 0) {
+    q += ' WHERE ' + where.join(' AND ');
+  }
+  q += ' ORDER BY created_at DESC LIMIT 30';
+  const r = await pool.query(q, params);
+  return r.rows;
+}
+
+async function addIbdaCapsule({ studentId, studentName, classId, bookTitle, audioData, durationSec, note }) {
+  const r = await pool.query(`
+    INSERT INTO ibda_capsules (student_id, student_name, class_id, book_title, audio_data, duration_sec, note)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, student_id, student_name, class_id, book_title, duration_sec, note, created_at
+  `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', audioData, parseInt(durationSec, 10) || 0, note || '']);
+  return r.rows[0];
+}
+
+async function getRaceData() {
+  const classesRes = await pool.query('SELECT id, name FROM classes ORDER BY id');
+  const groupsRes = await pool.query('SELECT id, class_id, name, color, icon FROM groups ORDER BY id');
+  const pointsRes = await pool.query(`
+    SELECT class_id, SUM(points) as total_points
+    FROM history_logs
+    GROUP BY class_id
+  `);
+  const readingRes = await pool.query(`
+    SELECT class_id, SUM(COALESCE(end_page - start_page + 1, 0)) as total_pages
+    FROM iqra_reading_records
+    GROUP BY class_id
+  `);
+  const studentsCountRes = await pool.query(`
+    SELECT class_id, COUNT(*) as count
+    FROM students
+    GROUP BY class_id
+  `);
+
+  const pointsMap = {};
+  pointsRes.rows.forEach(r => { pointsMap[r.class_id] = parseInt(r.total_points, 10) || 0; });
+  const readingMap = {};
+  readingRes.rows.forEach(r => { readingMap[r.class_id] = parseInt(r.total_pages, 10) || 0; });
+  const countMap = {};
+  studentsCountRes.rows.forEach(r => { countMap[r.class_id] = parseInt(r.count, 10) || 0; });
+
+  const racers = classesRes.rows.map((c, idx) => {
+    const pts = pointsMap[c.id] || 0;
+    const pages = readingMap[c.id] || 0;
+    const totalScore = pts + (pages * 2);
+    const matchingGroup = groupsRes.rows.find(g => g.name === c.name || g.class_id === c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      icon: matchingGroup?.icon || (idx % 2 === 0 ? '🏇' : '🏹'),
+      color: matchingGroup?.color || (idx === 0 ? '#3b82f6' : idx === 1 ? '#10b981' : '#f59e0b'),
+      points: pts,
+      readingPages: pages,
+      studentsCount: countMap[c.id] || 0,
+      totalScore: totalScore
+    };
+  });
+
+  const maxScore = Math.max(...racers.map(r => r.totalScore), 100);
+  racers.forEach(r => {
+    r.progressPercent = Math.min(100, Math.round((r.totalScore / maxScore) * 100));
+  });
+  racers.sort((a, b) => b.totalScore - a.totalScore);
+
+  return { racers, maxScore, updatedAt: new Date().toISOString() };
+}
+
 module.exports = {
   getSettings,
   saveSettings,
@@ -230,5 +343,11 @@ module.exports = {
   addPoints,
   recordReadingSubmission,
   ping,
+  getIbdaGems,
+  addIbdaGem,
+  reactIbdaGem,
+  getIbdaCapsules,
+  addIbdaCapsule,
+  getRaceData,
   DEFAULT_SETTINGS
 };

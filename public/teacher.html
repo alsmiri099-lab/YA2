@@ -6,6 +6,7 @@
   <title>لوحة تحكم المعلم | اقرأ</title>
   <link rel="icon" type="image/jpeg" href="favicon.jpeg">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/ibda.css">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
@@ -80,6 +81,10 @@
       <button class="teacher-tab" data-tab="settings" onclick="switchTab('settings')">
         <span class="teacher-tab-icon">⚙️</span>
         <span class="teacher-tab-text">الإعدادات</span>
+      </button>
+      <button class="teacher-tab" data-tab="ibda" onclick="switchTab('ibda')" style="color: #f59e0b; font-weight: 800;">
+        <span class="teacher-tab-icon">✨</span>
+        <span class="teacher-tab-text">إبداع</span>
       </button>
     </div>
 
@@ -544,6 +549,11 @@
 
     </div>
 
+    <!-- ==================== تبويب: إبداع ==================== -->
+    <div class="teacher-tab-content" id="tab-ibda">
+      <div id="teacherIbdaContainer"></div>
+    </div>
+
   </main>
 
 
@@ -559,6 +569,7 @@
 
   <script src="js/auth.js?v=2.0"></script>
   <script src="js/contact-dev.js?v=2.0"></script>
+  <script src="js/ibda.js?v=2.1"></script>
   <script src="js/teacher.js?v=2.0"></script>
 </body>
 </html>

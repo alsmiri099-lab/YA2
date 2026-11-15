@@ -528,6 +528,11 @@ function openBook(bookName) {
 function goBackToBooks() {
   currentBookName = null;
   document.getElementById('bookDetailView').style.display = 'none';
+  const ibdaView = document.getElementById('ibdaView');
+  if (ibdaView) ibdaView.style.display = 'none';
+  isIbdaActive = false;
+  const btn = document.getElementById('btnNavIbda');
+  if (btn) btn.innerHTML = '✨ إبداع';
   const booksView = document.getElementById('booksView');
   booksView.style.display = 'block';
 
@@ -1167,6 +1172,45 @@ async function handleSendStudentMessage(event) {
   } finally {
     if (sendBtn) sendBtn.disabled = false;
     input.focus();
+  }
+}
+
+// ==========================================
+// تبديل وعرض قسم إبداع (IBDA HUB)
+// ==========================================
+let isIbdaActive = false;
+function toggleStudentIbdaView() {
+  const ibdaView = document.getElementById('ibdaView');
+  const booksView = document.getElementById('booksView');
+  const bookDetailView = document.getElementById('bookDetailView');
+  const btn = document.getElementById('btnNavIbda');
+  if (!ibdaView) return;
+
+  isIbdaActive = !isIbdaActive;
+  if (isIbdaActive) {
+    if (booksView) booksView.style.display = 'none';
+    if (bookDetailView) bookDetailView.style.display = 'none';
+    ibdaView.style.display = 'block';
+    if (btn) btn.innerHTML = '📚 العودة للكتب';
+
+    const completedOrds = (allHistoryData || []).filter(h => h.isCompleted);
+    const totalPages = completedOrds.reduce((sum, h) => sum + Math.max(0, (h.endPage || 0) - (h.startPage || 0) + 1), 0);
+    const currentUser = JSON.parse(localStorage.getItem('reading_user') || '{}');
+
+    if (window.IbdaHub) {
+      window.currentStudent = currentUser;
+      ibdaView.innerHTML = window.IbdaHub.renderIbdaFullHtml({
+        name: currentUser.name,
+        id: currentUser.id,
+        classId: currentUser.classId,
+        totalPages: totalPages
+      });
+      window.IbdaHub.loadGems();
+    }
+  } else {
+    ibdaView.style.display = 'none';
+    if (booksView) booksView.style.display = 'block';
+    if (btn) btn.innerHTML = '✨ إبداع';
   }
 }
 

@@ -1,0 +1,837 @@
+/* ==========================================================================
+   منظومة إبداع | IBDA CREATIVE HUB STYLES
+   تصميم فاخر، تفاعلي، ومناسب للحلقات القرآنية والمساجد
+   ========================================================================== */
+
+:root {
+  --ibda-gold: #f59e0b;
+  --ibda-gold-glow: rgba(245, 158, 11, 0.35);
+  --ibda-emerald: #10b981;
+  --ibda-emerald-glow: rgba(16, 185, 129, 0.3);
+  --ibda-navy: #0f172a;
+  --ibda-card-bg: rgba(30, 41, 59, 0.85);
+  --ibda-border: rgba(245, 158, 11, 0.25);
+}
+
+/* Container */
+.ibda-container {
+  padding: 1.5rem 1rem 3rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: inherit;
+}
+
+/* Header Banner */
+.ibda-hero-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(245, 158, 11, 0.18) 50%, rgba(59, 130, 246, 0.15) 100%),
+              radial-gradient(circle at top right, rgba(245, 158, 11, 0.2), transparent 60%);
+  border: 1px solid var(--ibda-border);
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.ibda-hero-banner::after {
+  content: '✨';
+  position: absolute;
+  top: -15px;
+  left: 20px;
+  font-size: 5rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ibda-hero-title-group h2 {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 0.35rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ibda-hero-title-group h2 span.sparkle {
+  color: var(--ibda-gold);
+  filter: drop-shadow(0 0 8px var(--ibda-gold));
+}
+
+.ibda-hero-title-group p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ibda-hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ibda-btn-action {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #0f172a !important;
+  font-weight: 800;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.ibda-btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+  filter: brightness(1.1);
+}
+
+.ibda-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 700;
+  padding: 0.65rem 1.15rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.ibda-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Nav Sub-Tabs */
+.ibda-tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  scrollbar-width: thin;
+}
+
+.ibda-tab-btn {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 0.65rem 1.15rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ibda-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #f8fafc;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ibda-tab-btn.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-color: var(--ibda-gold);
+  color: #fbbf24;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+}
+
+/* Card Sections */
+.ibda-section {
+  display: none;
+  animation: ibdaFadeIn 0.3s ease forwards;
+}
+
+.ibda-section.active {
+  display: block;
+}
+
+@keyframes ibdaFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ibda-card {
+  background: var(--ibda-card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* ==========================================================================
+   1. واحة القارئ (READER'S OASIS)
+   ========================================================================== */
+.oasis-stage-card {
+  background: radial-gradient(circle at center top, #1e3a8a 0%, #0f172a 70%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.oasis-sky-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 120px 80px, #fbbf24, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 240px 40px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 380px 110px, #60a5fa, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 500px 30px, #fff, rgba(0,0,0,0));
+  opacity: 0.6;
+}
+
+.oasis-visual-wrap {
+  position: relative;
+  height: 250px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.oasis-ground {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  width: 90%;
+  height: 40px;
+  background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+  border-radius: 50% 50% 0 0;
+  box-shadow: 0 -4px 15px rgba(22, 101, 52, 0.5);
+  border-top: 2px solid #4ade80;
+}
+
+.oasis-tree-svg {
+  position: relative;
+  z-index: 2;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+}
+
+.oasis-tree-svg:hover {
+  transform: scale(1.04);
+}
+
+.oasis-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.oasis-stat-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: right;
+}
+
+.oasis-stat-box .icon {
+  font-size: 2rem;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.oasis-stat-box .val {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fbbf24;
+}
+
+.oasis-stat-box .lbl {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.oasis-interact-bar {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.water-splash-anim {
+  animation: splashFade 1.2s ease-out forwards;
+}
+
+@keyframes splashFade {
+  0% { transform: translateY(0) scale(0.6); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.4); opacity: 0; }
+}
+
+/* ==========================================================================
+   2. كبسولة الفائدة الصوتية (VOICE CAPSULE)
+   ========================================================================== */
+.recorder-card {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.recorder-btn-wrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.btn-record-main {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 2.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.45);
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.btn-record-main:hover {
+  transform: scale(1.08);
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.6);
+}
+
+.btn-record-main.recording {
+  animation: pulseRecording 1.4s infinite;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+@keyframes pulseRecording {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 24px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.recorder-timer {
+  font-size: 1.85rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: #f87171;
+  margin-top: 0.5rem;
+}
+
+.audio-waveform-bars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 36px;
+  margin: 1rem auto;
+}
+
+.audio-waveform-bars span {
+  width: 4px;
+  height: 8px;
+  background: #60a5fa;
+  border-radius: 4px;
+  transition: height 0.15s ease;
+}
+
+.audio-waveform-bars.active span {
+  animation: waveBar 0.8s infinite ease-in-out alternate;
+}
+
+.audio-waveform-bars.active span:nth-child(2) { animation-delay: 0.1s; }
+.audio-waveform-bars.active span:nth-child(3) { animation-delay: 0.2s; }
+.audio-waveform-bars.active span:nth-child(4) { animation-delay: 0.3s; }
+.audio-waveform-bars.active span:nth-child(5) { animation-delay: 0.4s; }
+.audio-waveform-bars.active span:nth-child(6) { animation-delay: 0.2s; }
+
+@keyframes waveBar {
+  from { height: 6px; }
+  to { height: 32px; background: #ef4444; }
+}
+
+.capsules-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.capsule-item {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  border-right: 4px solid #ef4444;
+}
+
+.capsule-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.capsule-title {
+  font-weight: 800;
+  color: #f8fafc;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   3. خريطة طريق العلماء (SCHOLARS' ROADMAP)
+   ========================================================================== */
+.scholars-map-container {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 20px;
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.scholars-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 1rem 0;
+}
+
+.scholars-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 32px;
+  width: 4px;
+  background: linear-gradient(180deg, #10b981 0%, #f59e0b 50%, #64748b 100%);
+  border-radius: 4px;
+}
+
+.station-node {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.station-node:hover {
+  transform: translateX(-4px);
+}
+
+.station-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #0f172a;
+  border: 3px solid #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.station-node.unlocked .station-icon-wrap {
+  border-color: #f59e0b;
+  background: radial-gradient(circle, #78350f 0%, #1e293b 100%);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+}
+
+.station-node.active-now .station-icon-wrap {
+  border-color: #10b981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.7);
+  animation: stationPulse 1.8s infinite;
+}
+
+@keyframes stationPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.station-details {
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  flex: 1;
+}
+
+.station-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.station-landmark {
+  font-size: 0.82rem;
+  color: #fbbf24;
+  margin-bottom: 0.35rem;
+}
+
+.station-desc {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   4. حائط درر القراءة (READING GEMS WALL)
+   ========================================================================== */
+.gems-wall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.gem-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 18px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.gem-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.15);
+}
+
+.gem-quote-mark {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: rgba(245, 158, 11, 0.25);
+  position: absolute;
+  top: 10px;
+  left: 15px;
+}
+
+.gem-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #f1f5f9;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.gem-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.gem-student-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gem-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.gem-reactions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-react {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.btn-react:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   5. شاشة سباق الحلقات التفاعلي للمسجد (MOSQUE LIVE TV CLASH)
+   ========================================================================== */
+.mosque-race-wrap {
+  background: #090d16;
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-radius: 24px;
+  padding: 2rem;
+  color: #fff;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.mosque-race-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.mosque-race-header h2 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fbbf24;
+  margin: 0;
+  text-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+}
+
+.race-lanes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.race-lane {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  position: relative;
+}
+
+.race-lane-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.race-lane-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.race-lane-score {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #38bdf8;
+}
+
+.race-track-bar {
+  height: 24px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 12px;
+  position: relative;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.race-track-progress {
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #3b82f6 0%, #10b981 50%, #f59e0b 100%);
+  position: relative;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.race-horse-marker {
+  position: absolute;
+  top: -16px;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 2.2rem;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  animation: horseGallop 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes horseGallop {
+  from { transform: translateX(-50%) translateY(0); }
+  to { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* ==========================================================================
+   6. مولّد ملصقات QR الذكية للكتب (SMART BOOK QR GENERATOR)
+   ========================================================================== */
+.qr-preview-card {
+  width: 280px;
+  margin: 1.5rem auto;
+  background: #fff;
+  color: #0f172a;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 3px solid #1e3a8a;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.qr-preview-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #1e3a8a;
+  margin-bottom: 0.5rem;
+}
+
+.qr-code-img {
+  width: 140px;
+  height: 140px;
+  margin: 0.5rem auto;
+  display: block;
+}
+
+.qr-preview-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   7. مجلة إبداع الأسبوعية (WEEKLY MAGAZINE)
+   ========================================================================== */
+.magazine-sheet {
+  background: #fdfbf7;
+  color: #1e293b;
+  border: 3px double #b45309;
+  border-radius: 12px;
+  padding: 2.5rem;
+  max-width: 800px;
+  margin: 1.5rem auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-family: 'Amiri', 'Traditional Arabic', serif;
+}
+
+.magazine-header {
+  border-bottom: 2px solid #b45309;
+  padding-bottom: 1rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.magazine-header h1 {
+  font-size: 2.4rem;
+  color: #78350f;
+  margin: 0 0 0.5rem 0;
+  font-weight: 900;
+}
+
+.magazine-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.magazine-block {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.magazine-block h3 {
+  color: #92400e;
+  border-bottom: 1px solid #fde68a;
+  padding-bottom: 0.35rem;
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+/* PRINT STYLES FOR MAGAZINE & QR LABELS */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

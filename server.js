@@ -635,6 +635,84 @@ app.delete('/api/messages/clear/:otherUserId', authenticateToken, async (req, re
   }
 });
 
+// ==========================================
+// قسم إبداع (IBDA HUB APIS FOR YA2)
+// ==========================================
+
+// 1. جلب درر القراءة
+app.get('/api/ibda/gems', async (req, res) => {
+  try {
+    const gems = await naqati.getIbdaGems(req.query.classId);
+    res.json({ success: true, gems });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. إضافة درة جديدة
+app.post('/api/ibda/gems', async (req, res) => {
+  const { studentId, studentName, classId, bookTitle, gemText } = req.body || {};
+  if (!gemText || !studentName) {
+    return res.status(400).json({ error: 'الرجاء إدخال اسم الطالب ونص الدرة' });
+  }
+  try {
+    const gem = await naqati.addIbdaGem({ studentId, studentName, classId, bookTitle, gemText });
+    res.json({ success: true, gem });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. التفاعل مع درة
+app.post('/api/ibda/gems/:id/react', async (req, res) => {
+  const { type } = req.body || {};
+  try {
+    const gem = await naqati.reactIbdaGem(req.params.id, type);
+    res.json({ success: true, gem });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. جلب الكبسولات الصوتية
+app.get('/api/ibda/capsules', async (req, res) => {
+  try {
+    const capsules = await naqati.getIbdaCapsules({
+      classId: req.query.classId,
+      studentId: req.query.studentId
+    });
+    res.json({ success: true, capsules });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. حفظ كبسولة صوتية جديدة
+app.post('/api/ibda/capsules', async (req, res) => {
+  const { studentId, studentName, classId, bookTitle, audioData, durationSec, note } = req.body || {};
+  if (!audioData || !studentName) {
+    return res.status(400).json({ error: 'الرجاء إدخال اسم الطالب والملف الصوتي' });
+  }
+  try {
+    const capsule = await naqati.addIbdaCapsule({
+      studentId, studentName, classId, bookTitle, audioData, durationSec, note
+    });
+    res.json({ success: true, capsule });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. بيانات سباق الحلقات التفاعلي للمسجد (Live Mosque TV Clash)
+app.get('/api/ibda/race-data', async (req, res) => {
+  try {
+    const data = await naqati.getRaceData();
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Fallback to serving main html for client routing
 app.get('*', (req, res) => {
 
