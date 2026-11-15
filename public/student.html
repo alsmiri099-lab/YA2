@@ -21,6 +21,9 @@
         <span>اقرأ | لوحة الطالب</span>
       </a>
       <div class="user-nav-info">
+        <button type="button" class="btn-dev-contact" onclick="scrollToGemsWall()" title="الانتقال إلى حائط الدرر" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #d97706; font-weight: 700;">
+          <span>💎</span> <span>حائط الدرر</span>
+        </button>
         <button type="button" class="btn-dev-contact" onclick="openStudentChatModal()" id="btnStudentChatNav" title="تواصل ومحادثة مع المعلم" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #2563EB;">
           <span>💬</span> <span>تواصل مع المعلم</span>
           <span id="studentUnreadBadge" class="chat-contact-badge" style="display:none; margin-right:4px;">0</span>
@@ -162,7 +165,7 @@
       </div>
 
       <!-- قسم حائط درر القراءة للطلاب -->
-      <div class="card" style="margin-top: 30px; border-radius: var(--border-radius-lg); padding: 22px;">
+      <div class="card" id="studentGemsSection" style="margin-top: 30px; border-radius: var(--border-radius-lg); padding: 22px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
           <div>
             <h3 class="card-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">

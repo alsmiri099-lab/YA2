@@ -20,6 +20,7 @@
       </a>
       <div class="user-nav-info">
         <span class="user-badge" id="teacherName">المعلم</span>
+        <button type="button" onclick="switchTab('ibda')" class="btn btn-secondary" style="width: auto; padding: 7px 14px; font-size: 0.88rem; color: #b45309; border-color: rgba(245, 158, 11, 0.4); font-weight: 800; background: rgba(245, 158, 11, 0.08);">✨ إبداع</button>
         <a id="naqatiNavLink" href="#" target="_blank" class="btn btn-secondary" style="width: auto; padding: 8px 14px; display: none; text-decoration: none;">⭐ نقاطي</a>
         <button onclick="logout()" class="btn btn-secondary" style="width: auto; padding: 8px 16px;">تسجيل الخروج</button>
       </div>
@@ -41,6 +42,10 @@
       <button class="quick-action-btn" onclick="switchTab('assignments'); document.getElementById('bookName').focus();">
         <span class="quick-action-icon">📅</span>
         <span>+ ورد جديد</span>
+      </button>
+      <button class="quick-action-btn" onclick="switchTab('ibda');" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15)); border: 1px solid rgba(245, 158, 11, 0.35);">
+        <span class="quick-action-icon">✨</span>
+        <span style="color:#d97706; font-weight:800;">منظومة إبداع</span>
       </button>
       <button class="quick-action-btn" onclick="switchTab('settings'); setTimeout(() => document.getElementById('linkCard').scrollIntoView({behavior:'smooth'}), 100);">
         <span class="quick-action-icon">🔗</span>
@@ -64,6 +69,10 @@
         <span class="teacher-tab-icon">📖</span>
         <span class="teacher-tab-text">الأوراد</span>
       </button>
+      <button class="teacher-tab" data-tab="ibda" onclick="switchTab('ibda')" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.08)); border: 1px solid rgba(245, 158, 11, 0.35); color: #b45309;">
+        <span class="teacher-tab-icon">✨</span>
+        <span class="teacher-tab-text">إبداع</span>
+      </button>
       <button class="teacher-tab" data-tab="accounts" onclick="switchTab('accounts')">
         <span class="teacher-tab-icon">👥</span>
         <span class="teacher-tab-text">الحسابات</span>
@@ -81,10 +90,6 @@
       <button class="teacher-tab" data-tab="settings" onclick="switchTab('settings')">
         <span class="teacher-tab-icon">⚙️</span>
         <span class="teacher-tab-text">الإعدادات</span>
-      </button>
-      <button class="teacher-tab" data-tab="ibda" onclick="switchTab('ibda')">
-        <span class="teacher-tab-icon">✨</span>
-        <span class="teacher-tab-text">إبداع</span>
       </button>
     </div>
 

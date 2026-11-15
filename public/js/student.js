@@ -1492,6 +1492,18 @@ async function handleSendStudentMessage(event) {
 // --- حائط درر القراءة في صفحة الطالب ---
 // ==========================================
 
+function scrollToGemsWall() {
+  const el = document.getElementById('studentGemsSection');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.style.transition = 'box-shadow 0.3s ease';
+    el.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.4)';
+    setTimeout(() => {
+      el.style.boxShadow = '';
+    }, 1500);
+  }
+}
+
 async function loadStudentGems() {
   const container = document.getElementById('studentGemsList');
   if (!container) return;
