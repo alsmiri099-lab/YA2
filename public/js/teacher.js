@@ -34,18 +34,6 @@ function switchTab(tabName) {
     loadTeacherConversations();
   }
 
-  // If ibda tab is opened, render ibda hub
-  if (tabName === 'ibda') {
-    const c = document.getElementById('teacherIbdaContainer');
-    if (c && window.IbdaHub) {
-      c.innerHTML = window.IbdaHub.renderIbdaFullHtml({
-        name: 'المعلم',
-        totalPages: 100
-      });
-      window.IbdaHub.loadGems();
-    }
-  }
-
   // Save to localStorage
   localStorage.setItem('teacherActiveTab', tabName);
 }

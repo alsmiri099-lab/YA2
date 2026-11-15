@@ -6,7 +6,6 @@
   <title>لوحة تحكم الطالب | اقرأ</title>
   <link rel="icon" type="image/jpeg" href="favicon.jpeg">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/ibda.css">
 </head>
 <body>
 
@@ -26,7 +25,6 @@
           <span id="studentUnreadBadge" class="chat-contact-badge" style="display:none; margin-right:4px;">0</span>
         </button>
         <span class="user-badge" id="studentName">الطالب</span>
-        <button type="button" class="btn btn-secondary" onclick="toggleStudentIbdaView()" id="btnNavIbda" style="width: auto; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(16, 185, 129, 0.25)); border-color: #f59e0b; color: #fbbf24; font-weight: 800; padding: 8px 14px;">✨ إبداع</button>
         <a id="naqatiNavLink" href="#" target="_blank" class="btn btn-secondary" style="width: auto; padding: 8px 14px; display: none; text-decoration: none;">⭐ نقاطي</a>
         <button onclick="logout()" class="btn btn-secondary" style="width: auto; padding: 8px 16px;">تسجيل الخروج</button>
       </div>
@@ -36,9 +34,6 @@
   <!-- Main Container -->
   <main class="container">
     <div id="studentAlert" class="alert"></div>
-
-    <!-- قسم إبداع -->
-    <div id="ibdaView" style="display: none;"></div>
 
     <!-- ============ الشاشة 1: اختيار الكتاب ============ -->
     <div id="booksView">
@@ -276,7 +271,6 @@
 
   <script src="js/auth.js?v=2.0"></script>
   <script src="js/contact-dev.js?v=2.0"></script>
-  <script src="js/ibda.js?v=2.1"></script>
   <script src="js/student.js?v=2.0"></script>
 </body>
 </html>
