@@ -138,13 +138,24 @@ async function registerIqraUrl(origin) {
 }
 
 // --- الطلاب ---
-async function listStudents() {
+async function listStudents(unitParam = null) {
+  let unitId = null;
+  if (unitParam) {
+    try {
+      const uRes = await pool.query('SELECT id FROM admin_units WHERE id = $1 OR LOWER(slug) = LOWER($1) OR name = $1 LIMIT 1', [String(unitParam).trim()]);
+      if (uRes.rows[0]) unitId = uRes.rows[0].id;
+    } catch(e) {}
+  }
+  if (!unitId) {
+    unitId = 'unit_thani_thanawi';
+  }
+
   const r = await pool.query(`
-    SELECT s.id, s.name, s.passcode, s.class_id, s.avatar, c.name AS class_name
+    SELECT s.id, s.name, s.passcode, s.class_id, s.avatar, s.unit_id, c.name AS class_name
     FROM students s LEFT JOIN classes c ON c.id = s.class_id
-    WHERE s.name <> ALL($1::text[])
+    WHERE s.name <> ALL($1::text[]) AND (s.unit_id = $2 OR (s.unit_id IS NULL AND $2 = 'unit_thani_thanawi'))
     ORDER BY c.name NULLS LAST, s.name
-  `, [DUMMY_NAMES]);
+  `, [DUMMY_NAMES, unitId]);
   return r.rows.map(s => ({
     id: s.id,
     name: s.name,

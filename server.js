@@ -68,7 +68,8 @@ app.post('/api/auth/register-student', (req, res) => {
 // قائمة الطلاب من نقاطي لشاشة دخول الطالب (بدون رموز الدخول)
 app.get('/api/auth/naqati-students', async (req, res) => {
   try {
-    const students = await naqati.listStudents();
+    const unit = req.query.u || req.query.unit || req.headers['x-unit-id'];
+    const students = await naqati.listStudents(unit);
     res.json({ students: students.map(s => ({ id: s.id, name: s.name, className: s.className, classId: s.classId, avatar: s.avatar })) });
   } catch (error) {
     console.error('naqati-students error:', error.message);
@@ -279,7 +280,8 @@ app.post('/api/teacher/integration/sync', authenticateToken, requireTeacher, asy
 // قائمة الطلاب مع رموز الدخول (للمعلم فقط)
 app.get('/api/teacher/naqati-codes', authenticateToken, requireTeacher, async (req, res) => {
   try {
-    res.json({ students: await naqati.listStudents() });
+    const unit = req.query.u || req.query.unit || req.headers['x-unit-id'];
+    res.json({ students: await naqati.listStudents(unit) });
   } catch (error) {
     res.status(503).json({ error: 'تعذر الاتصال بمنظومة نقاطي' });
   }

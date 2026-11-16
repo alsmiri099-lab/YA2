@@ -890,7 +890,10 @@ async function toggleNaqatiCodes() {
   box.style.display = 'block';
   box.innerHTML = '<div class="empty-state">⏳ جاري التحميل...</div>';
   try {
-    const res = await fetch(`${API_BASE}/teacher/naqati-codes`, { headers: getAuthHeaders() });
+    const urlParams = new URLSearchParams(window.location.search);
+    const u = urlParams.get('u') || urlParams.get('unit') || sessionStorage.getItem('iqra_unit') || '';
+    if (u) sessionStorage.setItem('iqra_unit', u);
+    const res = await fetch(`${API_BASE}/teacher/naqati-codes${u ? '?u=' + encodeURIComponent(u) : ''}`, { headers: getAuthHeaders() });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     if (!data.students.length) { box.innerHTML = '<div class="empty-state">لا يوجد طلاب في نقاطي.</div>'; return; }
