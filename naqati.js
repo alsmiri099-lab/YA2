@@ -179,14 +179,15 @@ async function verifyStudent(studentId, passcode) {
 async function addPoints(naqatiStudentId, points, criteriaName, note = '') {
   const num = parseInt(points, 10);
   if (!naqatiStudentId || !Number.isFinite(num) || num === 0) return false;
-  const st = await pool.query('SELECT name, class_id FROM students WHERE id = $1', [naqatiStudentId]);
+  const st = await pool.query('SELECT name, class_id, unit_id FROM students WHERE id = $1', [naqatiStudentId]);
   if (!st.rows[0]) return false;
   const now = Date.now();
   const logId = 'iqra_' + now + '_' + Math.random().toString(36).substr(2, 5);
+  const unitId = st.rows[0].unit_id || 'unit_thani_thanawi';
   await pool.query(`
-    INSERT INTO history_logs (id, class_id, target_type, target_id, target_name, criteria_name, points, log_date, created_at, note)
-    VALUES ($1, $2, 'student', $3, $4, $5, $6, $7, $8, $9)
-  `, [logId, st.rows[0].class_id, naqatiStudentId, st.rows[0].name, criteriaName, num, riyadhDate(now), now, note || '']);
+    INSERT INTO history_logs (id, class_id, target_type, target_id, target_name, criteria_name, points, log_date, created_at, note, unit_id)
+    VALUES ($1, $2, 'student', $3, $4, $5, $6, $7, $8, $9, $10)
+  `, [logId, st.rows[0].class_id, naqatiStudentId, st.rows[0].name, criteriaName, num, riyadhDate(now), now, note || '', unitId]);
   return true;
 }
 
