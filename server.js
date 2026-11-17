@@ -92,6 +92,8 @@ const unitsReady = pool.query(`
     ALTER TABLE criteria ADD COLUMN IF NOT EXISTS unit_id VARCHAR(64) DEFAULT 'unit_thani_thanawi';
     ALTER TABLE reading_link_settings ADD COLUMN IF NOT EXISTS unit_id VARCHAR(64) DEFAULT 'unit_thani_thanawi';
     ALTER TABLE app_users ADD COLUMN IF NOT EXISTS unit_id VARCHAR(64);
+    ALTER TABLE student_goals ADD COLUMN IF NOT EXISTS unit_id VARCHAR(64) DEFAULT 'unit_thani_thanawi';
+    ALTER TABLE iqra_reading_records ADD COLUMN IF NOT EXISTS unit_id VARCHAR(64) DEFAULT 'unit_thani_thanawi';
 `).catch(err => console.warn('Notice on admin_units table check:', err.message));
 
 async function resolveUnit(req) {
@@ -611,6 +613,11 @@ app.delete('/api/units/:id', async (req, res) => {
         await pool.query('DELETE FROM quran_records WHERE unit_id = $1', [id]);
         await pool.query('DELETE FROM student_messages WHERE unit_id = $1', [id]);
         await pool.query('DELETE FROM attendance WHERE unit_id = $1', [id]);
+        await pool.query('DELETE FROM student_goals WHERE unit_id = $1', [id]);
+        await pool.query('DELETE FROM iqra_reading_records WHERE unit_id = $1', [id]);
+        await pool.query('DELETE FROM ibda_gems WHERE unit_id = $1', [id]);
+        await pool.query('DELETE FROM ibda_capsules WHERE unit_id = $1', [id]);
+        await pool.query('DELETE FROM criteria WHERE unit_id = $1', [id]);
         await pool.query('DELETE FROM app_settings WHERE unit_id = $1', [id]);
         await pool.query('DELETE FROM app_users WHERE unit_id = $1', [id]);
         await pool.query('DELETE FROM admin_units WHERE id = $1', [id]);
@@ -629,14 +636,14 @@ app.get('/api/state', async (req, res) => {
             pool.query("SELECT * FROM classes WHERE unit_id = $1 AND name != 'الصف السادس (أ) - المتميزون' ORDER BY created_at ASC", [unitId]),
             pool.query("SELECT * FROM groups WHERE unit_id = $1 ORDER BY created_at ASC", [unitId]),
             pool.query("SELECT * FROM students WHERE unit_id = $1 AND name NOT IN ('محمد عبد الله القحطاني', 'عبد الرحمن خالد الدوسري', 'عمر فهد العتيبي', 'فيصل سعود الشمري', 'سلطان ماجد المطيري', 'ريان أحمد الغامدي', 'خالد إبراهيم الزهراني', 'يوسف عادل السبيعي') ORDER BY created_at ASC", [unitId]),
-            pool.query("SELECT * FROM criteria WHERE (unit_id = $1 OR unit_id IS NULL OR unit_id = 'unit_thani_thanawi') ORDER BY created_at ASC", [unitId]),
+            pool.query("SELECT * FROM criteria WHERE unit_id = $1 ORDER BY created_at ASC", [unitId]),
             pool.query("SELECT * FROM history_logs WHERE unit_id = $1 AND id NOT LIKE 'seed_%' AND id NOT LIKE 'log_seed_%' ORDER BY created_at DESC", [unitId]),
             pool.query("SELECT * FROM app_settings WHERE unit_id = $1 OR id = $2 ORDER BY updated_at DESC LIMIT 1", [unitId, 'settings_' + unitId]),
             pool.query("SELECT * FROM quran_records WHERE unit_id = $1 ORDER BY created_at DESC", [unitId]),
             pool.query("SELECT * FROM student_messages WHERE unit_id = $1 ORDER BY created_at DESC LIMIT 100", [unitId]).catch(() => ({ rows: [] })),
             pool.query("SELECT * FROM attendance WHERE unit_id = $1 ORDER BY record_date DESC", [unitId]).catch(() => ({ rows: [] })),
-            pool.query("SELECT * FROM student_goals WHERE (unit_id = $1 OR unit_id IS NULL) ORDER BY created_at DESC", [unitId]).catch(() => ({ rows: [] })),
-            pool.query("SELECT * FROM iqra_reading_records WHERE (unit_id = $1 OR unit_id IS NULL) ORDER BY created_at DESC", [unitId]).catch(() => ({ rows: [] })),
+            pool.query("SELECT * FROM student_goals WHERE unit_id = $1 ORDER BY created_at DESC", [unitId]).catch(() => ({ rows: [] })),
+            pool.query("SELECT * FROM iqra_reading_records WHERE unit_id = $1 ORDER BY created_at DESC", [unitId]).catch(() => ({ rows: [] })),
             pool.query("SELECT * FROM reading_link_settings WHERE unit_id = $1 OR id = 'global' ORDER BY updated_at DESC LIMIT 1", [unitId]).catch(() => ({ rows: [] }))
         ]);
 
@@ -659,6 +666,22 @@ app.get('/api/state', async (req, res) => {
             currentGroups = defaultGroups.map(g => ({ id: g[0], unit_id: g[1], class_id: g[2], name: g[3], color: g[4], icon: g[5] }));
         }
 
+        let currentCriteria = criteriaRes.rows;
+        if (currentCriteria.length === 0) {
+            const defaultCriteria = [
+                ['crit_1_' + Date.now(), unitId, 'الحضور', 'positive', 10, 'fa-user-check'],
+                ['crit_2_' + Date.now(), unitId, 'التبكير', 'positive', 5, 'fa-clock'],
+                ['crit_3_' + Date.now(), unitId, 'الزي', 'positive', 10, 'fa-shirt'],
+                ['crit_4_' + Date.now(), unitId, 'الحفظ', 'positive', 5, 'fa-book-quran'],
+                ['crit_5_' + Date.now(), unitId, 'المراجعة', 'positive', 10, 'fa-rotate-left'],
+                ['crit_6_' + Date.now(), unitId, 'الغياب', 'negative', 5, 'fa-user-xmark']
+            ];
+            for (const c of defaultCriteria) {
+                await pool.query('INSERT INTO criteria (id, unit_id, name, type, points, icon) VALUES ($1, $2, $3, $4, $5, $6)', c);
+            }
+            currentCriteria = defaultCriteria.map(c => ({ id: c[0], unit_id: c[1], name: c[2], type: c[3], points: c[4], icon: c[5] }));
+        }
+
         const settingsRow = settingsRes.rows[0] || {};
         const iqraSettingsRow = (iqraSettingsRes && iqraSettingsRes.rows && iqraSettingsRes.rows[0]) || {};
         const state = {
@@ -672,7 +695,7 @@ app.get('/api/state', async (req, res) => {
             classes: currentClasses.map(r => ({ id: r.id, name: r.name })),
             groups: currentGroups.map(r => ({ id: r.id, classId: r.class_id, name: r.name, color: r.color, icon: r.icon })),
             students: studentsRes.rows.map(r => ({ id: r.id, classId: r.class_id, groupId: r.group_id, name: r.name, avatar: r.avatar, passcode: r.passcode || '', createdAt: r.created_at })),
-            criteria: criteriaRes.rows.map(r => ({ id: r.id, name: r.name, type: r.type, points: r.points, icon: r.icon })),
+            criteria: currentCriteria.map(r => ({ id: r.id, name: r.name, type: r.type, points: r.points, icon: r.icon })),
             history: historyRes.rows.map(r => ({
                 id: r.id,
                 classId: r.class_id,
@@ -897,19 +920,17 @@ app.delete('/api/quran-records/:id', async (req, res) => {
 app.get('/api/student-messages', async (req, res) => {
     const { studentId, recipient } = req.query;
     try {
-        let query = 'SELECT * FROM student_messages';
-        const params = [];
-        const where = [];
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
+        let query = 'SELECT * FROM student_messages WHERE unit_id = $1';
+        const params = [unitId];
         if (studentId) {
             params.push(studentId);
-            where.push(`student_id = $${params.length}`);
+            query += ` AND student_id = $${params.length}`;
         }
         if (recipient) {
             params.push(recipient);
-            where.push(`recipient = $${params.length}`);
-        }
-        if (where.length > 0) {
-            query += ' WHERE ' + where.join(' AND ');
+            query += ` AND recipient = $${params.length}`;
         }
         query += ' ORDER BY created_at DESC LIMIT 100';
         const result = await pool.query(query, params);
@@ -1338,12 +1359,12 @@ app.post('/api/criteria', async (req, res) => {
         const unit = await resolveUnit(req);
         const unitId = unit.id;
         const critId = id || ('crit_' + Date.now());
-        const existing = await pool.query('SELECT id FROM criteria WHERE id = $1', [critId]);
+        const existing = await pool.query('SELECT id FROM criteria WHERE id = $1 AND unit_id = $2', [critId, unitId]);
 
         if (existing.rows.length > 0) {
             await pool.query(`
-                UPDATE criteria SET name = $1, type = $2, points = $3, icon = $4 WHERE id = $5
-            `, [name, type, parseInt(points, 10), icon, critId]);
+                UPDATE criteria SET name = $1, type = $2, points = $3, icon = $4 WHERE id = $5 AND unit_id = $6
+            `, [name, type, parseInt(points, 10), icon, critId, unitId]);
         } else {
             await pool.query(`
                 INSERT INTO criteria (id, unit_id, name, type, points, icon) VALUES ($1, $2, $3, $4, $5, $6)
@@ -1357,7 +1378,9 @@ app.post('/api/criteria', async (req, res) => {
 
 app.delete('/api/criteria/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM criteria WHERE id = $1', [req.params.id]);
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
+        await pool.query('DELETE FROM criteria WHERE id = $1 AND unit_id = $2', [req.params.id, unitId]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1485,13 +1508,16 @@ app.post('/api/settings/iqra-toggle', async (req, res) => {
 // 1. جلب درر القراءة
 app.get('/api/ibda/gems', async (req, res) => {
     try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
         const { classId } = req.query;
-        let q = 'SELECT * FROM ibda_gems ORDER BY created_at DESC LIMIT 60';
-        let params = [];
+        let q = 'SELECT * FROM ibda_gems WHERE (unit_id = $1 OR unit_id IS NULL)';
+        let params = [unitId];
         if (classId) {
-            q = 'SELECT * FROM ibda_gems WHERE class_id = $1 ORDER BY created_at DESC LIMIT 60';
-            params = [classId];
+            params.push(classId);
+            q += ` AND class_id = $${params.length}`;
         }
+        q += ' ORDER BY created_at DESC LIMIT 60';
         const r = await pool.query(q, params);
         res.json({ success: true, gems: r.rows });
     } catch (err) {
@@ -1506,11 +1532,13 @@ app.post('/api/ibda/gems', async (req, res) => {
         return res.status(400).json({ error: 'الرجاء إدخال اسم الطالب ونص الدرة' });
     }
     try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
         const r = await pool.query(`
-            INSERT INTO ibda_gems (student_id, student_name, class_id, book_title, gem_text)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO ibda_gems (student_id, student_name, class_id, book_title, gem_text, unit_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-        `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', gemText.trim()]);
+        `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', gemText.trim(), unitId]);
         res.json({ success: true, gem: r.rows[0] });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1540,20 +1568,18 @@ app.post('/api/ibda/gems/:id/react', async (req, res) => {
 // 4. جلب الكبسولات الصوتية
 app.get('/api/ibda/capsules', async (req, res) => {
     try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
         const { classId, studentId } = req.query;
-        let q = 'SELECT id, student_id, student_name, class_id, book_title, duration_sec, note, created_at, audio_data FROM ibda_capsules';
-        let where = [];
-        let params = [];
+        let q = 'SELECT id, student_id, student_name, class_id, book_title, duration_sec, note, created_at, audio_data FROM ibda_capsules WHERE (unit_id = $1 OR unit_id IS NULL)';
+        let params = [unitId];
         if (classId) {
             params.push(classId);
-            where.push(`class_id = $${params.length}`);
+            q += ` AND class_id = $${params.length}`;
         }
         if (studentId) {
             params.push(studentId);
-            where.push(`student_id = $${params.length}`);
-        }
-        if (where.length > 0) {
-            q += ' WHERE ' + where.join(' AND ');
+            q += ` AND student_id = $${params.length}`;
         }
         q += ' ORDER BY created_at DESC LIMIT 30';
         const r = await pool.query(q, params);
@@ -1570,11 +1596,13 @@ app.post('/api/ibda/capsules', async (req, res) => {
         return res.status(400).json({ error: 'الرجاء إدخال اسم الطالب والملف الصوتي' });
     }
     try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
         const r = await pool.query(`
-            INSERT INTO ibda_capsules (student_id, student_name, class_id, book_title, audio_data, duration_sec, note)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO ibda_capsules (student_id, student_name, class_id, book_title, audio_data, duration_sec, note, unit_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id, student_id, student_name, class_id, book_title, duration_sec, note, created_at
-        `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', audioData, parseInt(durationSec, 10) || 0, note || '']);
+        `, [studentId || null, studentName, classId || null, bookTitle || 'ورد القراءة', audioData, parseInt(durationSec, 10) || 0, note || '', unitId]);
         res.json({ success: true, capsule: r.rows[0] });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1584,23 +1612,28 @@ app.post('/api/ibda/capsules', async (req, res) => {
 // 6. بيانات سباق الحلقات التفاعلي للمسجد (Live Mosque TV Clash)
 app.get('/api/ibda/race-data', async (req, res) => {
     try {
-        const classesRes = await pool.query('SELECT id, name FROM classes ORDER BY id');
-        const groupsRes = await pool.query('SELECT id, class_id, name, color, icon FROM groups ORDER BY id');
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
+        const classesRes = await pool.query('SELECT id, name FROM classes WHERE unit_id = $1 ORDER BY id', [unitId]);
+        const groupsRes = await pool.query('SELECT id, class_id, name, color, icon FROM groups WHERE unit_id = $1 ORDER BY id', [unitId]);
         const pointsRes = await pool.query(`
             SELECT class_id, SUM(points) as total_points
             FROM history_logs
+            WHERE unit_id = $1
             GROUP BY class_id
-        `);
+        `, [unitId]);
         const readingRes = await pool.query(`
             SELECT class_id, SUM(COALESCE(end_page - start_page + 1, 0)) as total_pages
             FROM iqra_reading_records
+            WHERE unit_id = $1
             GROUP BY class_id
-        `);
+        `, [unitId]);
         const studentsCountRes = await pool.query(`
             SELECT class_id, COUNT(*) as count
             FROM students
+            WHERE unit_id = $1
             GROUP BY class_id
-        `);
+        `, [unitId]);
 
         const pointsMap = {};
         pointsRes.rows.forEach(r => { pointsMap[r.class_id] = parseInt(r.total_points, 10) || 0; });
