@@ -1003,6 +1003,33 @@ app.post('/api/student-messages/:id/reply', async (req, res) => {
     }
 });
 
+app.delete('/api/student-messages/:id', async (req, res) => {
+    try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
+        await pool.query('DELETE FROM student_messages WHERE id = $1 AND unit_id = $2', [req.params.id, unitId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/student-messages', async (req, res) => {
+    try {
+        const unit = await resolveUnit(req);
+        const unitId = unit.id;
+        const { filter } = req.query || {};
+        if (filter === 'processed') {
+            await pool.query("DELETE FROM student_messages WHERE unit_id = $1 AND status != 'pending'", [unitId]);
+        } else {
+            await pool.query('DELETE FROM student_messages WHERE unit_id = $1', [unitId]);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST Apply Points (Idempotent & Multi-Device Safe)
 app.post('/api/points', async (req, res) => {
     const { id, targetType, targetId, points, criteriaName, note, date, classId, selectedStudentIds, distributeToStudents } = req.body;

@@ -1,343 +1,1266 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة تحكم الطالب | اقرأ</title>
-  <link rel="icon" type="image/jpeg" href="favicon.jpeg">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/ibda.css?v=2.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الطالب | منظومة نقاطي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --bg-primary: #07090e;
+            --bg-surface: #121826;
+            --bg-elevated: #1a2236;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --student: #3b82f6;
+            --student-hover: #2563eb;
+            --student-glow: rgba(59, 130, 246, 0.45);
+            --emerald: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.4);
+            --gold: #fbbf24;
+            --gold-glow: rgba(251, 191, 36, 0.4);
+            --danger: #ef4444;
+            --radius-sm: 10px;
+            --radius-md: 18px;
+            --radius-lg: 28px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            background-image:
+                radial-gradient(at 50% 0%, rgba(59, 130, 246, 0.16) 0px, transparent 60%),
+                radial-gradient(at 100% 100%, rgba(251, 191, 36, 0.10) 0px, transparent 50%);
+            background-attachment: fixed;
+            padding-bottom: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background-attachment: scroll !important;
+            }
+        }
+
+        /* Top Header */
+        .portal-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(18, 24, 38, 0.94);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .portal-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            color: #fff;
+            box-shadow: 0 4px 14px var(--student-glow);
+        }
+
+        .brand-title h1 {
+            font-size: 1.15rem;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .brand-title span {
+            font-size: 0.78rem;
+            color: #60a5fa;
+            font-weight: 700;
+        }
+
+        .header-user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem 0.75rem;
+            border-radius: 30px;
+        }
+
+        .header-user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 0.95rem;
+            color: #fff;
+        }
+
+        .header-user-name {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* Nav Tabs */
+        .portal-nav-bar {
+            background: rgba(18, 24, 38, 0.75);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: center;
+            position: sticky;
+            top: 64px;
+            z-index: 90;
+            backdrop-filter: blur(12px);
+        }
+
+        .portal-nav-tabs {
+            display: flex;
+            gap: 0.4rem;
+            background: var(--bg-surface);
+            padding: 0.25rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .portal-nav-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.55rem 0.9rem;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+
+        .portal-nav-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .portal-nav-tab.active {
+            background: var(--student);
+            color: #fff;
+            box-shadow: 0 2px 10px var(--student-glow);
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 1.25rem;
+        }
+
+        /* Views */
+        .portal-view {
+            display: none;
+        }
+
+        .portal-view.active {
+            display: block;
+            animation: fadeInView 0.25s ease-out;
+        }
+
+        @keyframes fadeInView {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Portal Closed Banner */
+        .portal-closed-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(18, 24, 38, 0.95) 100%);
+            border: 2px solid rgba(239, 68, 68, 0.35);
+            border-radius: var(--radius-lg);
+            padding: 3rem 1.5rem;
+            text-align: center;
+            margin-top: 2rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .portal-closed-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1.5rem;
+            border: 2px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .portal-closed-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 0.75rem;
+        }
+
+        .portal-closed-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto 1.5rem;
+        }
+
+        /* Login Card */
+        .login-card {
+            background: linear-gradient(180deg, rgba(18, 24, 38, 0.95) 0%, rgba(26, 34, 54, 0.95) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem 1.75rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 35px rgba(59, 130, 246, 0.12);
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .login-emblem {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #fff;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 8px 24px var(--student-glow);
+        }
+
+        .login-card h2 {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 0.35rem;
+        }
+
+        .login-card p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .login-form-group {
+            text-align: right;
+            margin-bottom: 1.25rem;
+        }
+
+        .login-form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.45rem;
+        }
+
+        .styled-select, .styled-input, .styled-textarea {
+            width: 100%;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .styled-textarea {
+            resize: vertical;
+            min-height: 85px;
+            line-height: 1.5;
+        }
+
+        .styled-select:focus, .styled-input:focus, .styled-textarea:focus {
+            border-color: var(--student);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .pin-input-wrap {
+            position: relative;
+        }
+
+        .pin-input {
+            width: 100%;
+            letter-spacing: 0.6rem;
+            font-size: 1.6rem;
+            text-align: center;
+            font-weight: 900;
+            color: #60a5fa;
+            background: var(--bg-surface);
+            border: 2px solid rgba(59, 130, 246, 0.35);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .pin-input:focus {
+            border-color: var(--student);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-login-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: none;
+            color: #fff;
+            padding: 0.9rem;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 16px var(--student-glow);
+            transition: all 0.2s;
+            margin-top: 0.75rem;
+        }
+
+        .btn-login-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px var(--student-glow);
+        }
+
+        .login-error-msg {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Student Hero Card */
+        .student-hero-card {
+            background: linear-gradient(180deg, rgba(18, 24, 38, 0.92) 0%, rgba(26, 34, 54, 0.98) 100%);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-avatar {
+            width: 95px;
+            height: 95px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.7rem;
+            font-weight: 900;
+            color: #fff;
+            box-shadow: 0 8px 24px var(--student-glow);
+        }
+
+        .hero-name {
+            font-size: 1.65rem;
+            font-weight: 900;
+            color: #fff;
+        }
+
+        .hero-class-tag {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .hero-title-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 1.4rem;
+            border-radius: 30px;
+            border: 1px solid currentColor;
+            font-weight: 800;
+            font-size: 0.98rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Ranks & Stats Grid (4 columns) */
+        .hero-stats-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .hero-stats-row {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            text-align: center;
+        }
+
+        .stat-card i {
+            font-size: 1.4rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .stat-points i { color: var(--gold); }
+        .stat-circle-rank i { color: #60a5fa; }
+        .stat-overall-rank i { color: #a78bfa; }
+        .stat-quran i { color: var(--emerald); }
+
+        .stat-val {
+            font-size: 1.45rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .stat-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .stat-lbl {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+
+        /* Badges */
+        .badges-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .badge-pill {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .badge-pill i {
+            color: var(--gold);
+        }
+
+        /* Section Container Box */
+        .content-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .content-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .content-box-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Quran Log Styles */
+        .quran-stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
+            margin-bottom: 1.25rem;
+        }
+
+        @media (max-width: 600px) {
+            .quran-stats-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .quran-stat-mini {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.85rem;
+            text-align: center;
+        }
+
+        .quran-stat-mini strong {
+            display: block;
+            font-size: 1.45rem;
+            font-weight: 900;
+            line-height: 1.2;
+        }
+
+        .quran-stat-mini span {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+
+        .quran-record-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .quran-record-item:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .quran-record-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .quran-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .quran-badge.memo {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .quran-badge.rev {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .quran-record-date {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .quran-record-surah {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .quran-record-pages {
+            font-size: 0.85rem;
+            color: var(--gold);
+            font-weight: 800;
+        }
+
+        .quran-record-notes {
+            margin-top: 0.5rem;
+            padding: 0.45rem 0.75rem;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Points History Styles */
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+        }
+
+        .history-item-info strong {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .history-item-info small {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+        }
+
+        .history-pts {
+            font-size: 1.15rem;
+            font-weight: 900;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+        }
+
+        .history-pts.pos {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .history-pts.neg {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        /* Messages Styles */
+        .msg-composer-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .msg-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Leaderboard list */
+        .lb-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.35rem;
+        }
+
+        .lb-item:last-child {
+            border-bottom: none;
+        }
+
+        .lb-item.top-three {
+            background: rgba(251, 191, 36, 0.06);
+            border-color: rgba(251, 191, 36, 0.2);
+        }
+
+        .lb-item.is-current-student {
+            border: 2px solid var(--student);
+            background: rgba(59, 130, 246, 0.12);
+        }
+
+        .lb-rank {
+            width: 48px;
+            font-weight: 900;
+        }
+
+        .rank-circle {
+            display: inline-block;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+        }
+
+        .rank-badge.gold { color: #fbbf24; font-size: 1.15rem; }
+        .rank-badge.silver { color: #cbd5e1; font-size: 1.15rem; }
+        .rank-badge.bronze { color: #d97706; font-size: 1.15rem; }
+
+        .lb-name {
+            flex: 1;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .you-tag {
+            background: var(--student);
+            color: #fff;
+            padding: 0.15rem 0.55rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .lb-score {
+            font-weight: 800;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* Empty state */
+        .empty-state {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--student);
+        }
+
+        /* Hidden Records Notice */
+        .records-hidden-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px dashed rgba(245, 158, 11, 0.35);
+            border-radius: var(--radius-md);
+            padding: 2rem 1.25rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .records-hidden-notice i {
+            font-size: 2.2rem;
+            color: var(--warning);
+            margin-bottom: 0.75rem;
+        }
+
+        /* Loading */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            gap: 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--student);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- PWA Registration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW register fail:', err));
+            });
+        }
+    </script>
+
 </head>
 <body>
-
-  <!-- Confetti Container -->
-  <div id="confettiContainer" class="confetti-container"></div>
-
-  <!-- Header -->
-  <header>
-    <div class="nav-container">
-      <a href="student.html" class="logo">
-        <img src="favicon.jpeg" alt="اقرأ" class="logo-icon" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
-        <span>اقرأ | لوحة الطالب</span>
-      </a>
-      <div class="user-nav-info">
-        <button type="button" class="btn-dev-contact" onclick="scrollToGemsWall()" title="الانتقال إلى حائط الدرر" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #d97706; font-weight: 700;">
-          <span>💎</span> <span>حائط الدرر</span>
+    <!-- Cinematic Visual Intro Splash Screen (عرض مرئي فاخر وخفيف لبوابة الطالب) -->
+    <div id="introSplashScreen" class="intro-splash-screen">
+        <div class="intro-ambient-glow glow-gold"></div>
+        <div class="intro-ambient-glow glow-blue" style="background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);"></div>
+        <div class="intro-particles-canvas-wrap">
+            <canvas id="introParticlesCanvas"></canvas>
+        </div>
+        <div class="intro-content">
+            <div class="intro-badge">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span>بوابة الطالب</span>
+            </div>
+            <div class="intro-logo-emblem">
+                <div class="intro-ring ring-outer"></div>
+                <div class="intro-ring ring-inner"></div>
+                <div class="intro-icon-glow" style="color: #60a5fa;">
+                    <i class="fa-solid fa-book-quran"></i>
+                </div>
+            </div>
+            <h1 class="intro-brand-title">
+                <span class="gold-shimmer">نِـقَـاطِـي</span>
+            </h1>
+            <p class="intro-tagline">منظومة نجوم التحفيظ الذكية</p>
+            <div class="intro-verse">
+                <span>﴿ وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ ﴾</span>
+            </div>
+            <div class="intro-loading-bar">
+                <div class="intro-loading-fill"></div>
+            </div>
+        </div>
+        <button class="intro-skip-btn" id="introSkipBtn">
+            <span>تخطي</span>
+            <i class="fa-solid fa-angles-left"></i>
         </button>
-        <button type="button" class="btn-dev-contact" onclick="openStudentChatModal()" id="btnStudentChatNav" title="تواصل ومحادثة مع المعلم" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #2563EB;">
-          <span>💬</span> <span>تواصل مع المعلم</span>
-          <span id="studentUnreadBadge" class="chat-contact-badge" style="display:none; margin-right:4px;">0</span>
-        </button>
-        <span class="user-badge" id="studentName">الطالب</span>
-        <a id="naqatiNavLink" href="#" target="_blank" class="btn btn-secondary" style="width: auto; padding: 8px 14px; display: none; text-decoration: none;">⭐ نقاطي</a>
-        <button onclick="logout()" class="btn btn-secondary" style="width: auto; padding: 8px 16px;">تسجيل الخروج</button>
-      </div>
     </div>
-  </header>
 
-  <!-- Main Container -->
-  <main class="container">
-    <div id="studentAlert" class="alert"></div>
+    <!-- Loading Screen -->
+    <div id="studentLoading" class="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <span>جاري التحميل...</span>
+    </div>
 
-    <!-- ============ الشاشة 1: اختيار الكتاب ============ -->
-    <div id="booksView">
+    <!-- Header -->
+    <header class="portal-header">
+        <div class="portal-brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="brand-title">
+                <h1>منظومة نقاطي</h1>
+                <span><i class="fa-solid fa-star"></i> بوابة الطالب</span>
+            </div>
+        </div>
 
-      <!-- تحية ديناميكية -->
-      <div class="greeting-banner" id="greetingBanner">
-        <div class="greeting-text">
-          <span class="greeting-emoji" id="greetingEmoji">🌅</span>
-          <div>
-            <div class="greeting-main" id="greetingMain">صباح الخير!</div>
-            <div class="greeting-sub" id="greetingSub">هيا نبدأ يومنا بالقراءة</div>
-          </div>
+        <!-- Logged-in user badge (hidden when logged out) -->
+        <div id="headerUserWrap" style="display: none; align-items: center; gap: 0.75rem;">
+            <div class="header-user-badge">
+                <div class="header-user-avatar" id="headerUserAvatar">ط</div>
+                <span class="header-user-name" id="headerUserName">الطالب</span>
+            </div>
+            <button class="btn-logout" id="btnLogoutStudent" title="تسجيل خروج أو تبديل الطالب">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>خروج</span>
+            </button>
         </div>
-        <div class="greeting-streak" id="greetingStreak">
-          <span class="streak-fire">🔥</span>
-          <span class="streak-count" id="streakCount">0</span>
-          <span class="streak-label">يوم متواصل</span>
-        </div>
-      </div>
+    </header>
 
-      <!-- بطاقة آخر كتاب -->
-      <div class="points-hero-card" id="pointsHeroCard">
-        <div class="points-hero-content">
-          <div class="points-hero-icon" id="lastBookIcon">📗</div>
-          <div class="points-hero-info">
-            <div class="points-hero-label" id="lastBookLabel">آخر كتاب تقرأه</div>
-            <div class="points-hero-book-name" id="lastBookName">جاري التحميل...</div>
-            <div class="points-hero-value" id="studentPointsValue">0</div>
-            <div class="points-hero-sublabel">نقطة في هذا الكتاب</div>
-          </div>
-        </div>
-        <div class="points-hero-rank" id="studentRankInfo">
-          <span class="points-rank-badge" id="studentRankBadge">-</span>
-          <span class="points-rank-text" id="studentRankText">جاري التحميل...</span>
-        </div>
-        <div class="points-hero-message" id="pointsMotivation">
-          واصل القراءة واكسب المزيد من النقاط! 📚
-        </div>
-        <!-- شريط تقدم الكتاب -->
-        <div class="book-progress-bar-container" id="bookProgressContainer" style="display:none;">
-          <div class="book-progress-info">
-            <span id="bookProgressLabel">تقدمك في الكتاب</span>
-            <span id="bookProgressPercent">0%</span>
-          </div>
-          <div class="book-progress-bar">
-            <div class="book-progress-fill" id="bookProgressFill" style="width:0%"></div>
-          </div>
-          <div class="book-progress-pages" id="bookProgressPages">0 / 0 صفحة</div>
-        </div>
-        <div class="daily-quote" id="dailyQuote">
-          <span class="daily-quote-icon">🕌</span>
-          <span class="daily-quote-text" id="dailyQuoteText">جاري التحميل...</span>
-        </div>
-      </div>
+    <!-- Nav Bar (visible only when logged in) -->
+    <div id="portalNavBar" class="portal-nav-bar" style="display: none;">
+        <nav class="portal-nav-tabs">
+            <button class="portal-nav-tab active" data-tab="profile">
+                <i class="fa-solid fa-id-card"></i>
+                <span>بطاقتي</span>
+            </button>
+            <button class="portal-nav-tab" data-tab="messages">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>إشعار إنجاز الورد / مراسلة المدير</span>
+            </button>
+            <button class="portal-nav-tab tab-record-dependent" data-tab="quran">
+                <i class="fa-solid fa-book-quran"></i>
+                <span>سجل الحفظ والمراجعة</span>
+            </button>
+            <button class="portal-nav-tab tab-record-dependent" data-tab="points">
+                <i class="fa-solid fa-star"></i>
+                <span>سجل النقاط</span>
+            </button>
+            <button class="portal-nav-tab tab-record-dependent" id="navTabIqraReading" data-tab="reading">
+                <i class="fa-solid fa-book-open-reader"></i>
+                <span>سجل القراءة (اقرأ)</span>
+            </button>
+            <button class="portal-nav-tab tab-record-dependent" data-tab="honor">
+                <i class="fa-solid fa-trophy"></i>
+                <span>لوحة الشرف</span>
+            </button>
+        </nav>
+    </div>
 
-      <!-- قسم الإنجازات -->
-      <div class="achievements-section" id="achievementsSection">
-        <div class="achievements-header">
-          <span class="achievements-icon">🏆</span>
-          <div>
-            <h2>إنجازاتك</h2>
-            <p>أوسمة تحصل عليها تلقائياً عند تحقيق الأهداف</p>
-          </div>
-        </div>
-        <div class="achievements-grid" id="achievementsGrid">
-          <!-- يتم ملؤها بالـ JS -->
-        </div>
-      </div>
-
-      <!-- قسم ثماري -->
-      <div class="thamari-section" id="thamariSection">
-        <div class="thamari-header">
-          <span class="thamari-icon">🌳</span>
-          <div>
-            <h2>ثماري</h2>
-            <p>ملخص إنجازاتك في جميع الكتب</p>
-          </div>
-        </div>
-        <div class="thamari-grid" id="thamariGrid">
-          <div class="thamari-card thamari-card-points">
-            <div class="thamari-card-icon">⭐</div>
-            <div class="thamari-card-value" id="thamariPoints">0</div>
-            <div class="thamari-card-label">النقاط الإجمالية</div>
-          </div>
-          <div class="thamari-card thamari-card-pages">
-            <div class="thamari-card-icon">📄</div>
-            <div class="thamari-card-value" id="thamariPages">0</div>
-            <div class="thamari-card-label">صفحة مقروءة</div>
-          </div>
-          <div class="thamari-card thamari-card-ords">
-            <div class="thamari-card-icon">✅</div>
-            <div class="thamari-card-value" id="thamariCompleted">0</div>
-            <div class="thamari-card-label">ورد مُنجَز</div>
-          </div>
-          <div class="thamari-card thamari-card-total">
-            <div class="thamari-card-icon">📖</div>
-            <div class="thamari-card-value" id="thamariTotal">0</div>
-            <div class="thamari-card-label">ورد كلي</div>
-          </div>
-          <div class="thamari-card thamari-card-books">
-            <div class="thamari-card-icon">📚</div>
-            <div class="thamari-card-value" id="thamariBooks">0</div>
-            <div class="thamari-card-label">كتاب</div>
-          </div>
-          <div class="thamari-card thamari-card-rate">
-            <div class="thamari-card-icon">📊</div>
-            <div class="thamari-card-value" id="thamariRate">0%</div>
-            <div class="thamari-card-label">نسبة الإنجاز</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- عنوان الكتب -->
-      <div class="books-section-header">
-        <h2>📚 كتبك المطلوبة</h2>
-        <p>اختر كتاباً للدخول إلى صفحته ومتابعة أوراد القراءة</p>
-      </div>
-
-      <!-- شبكة بطاقات الكتب -->
-      <div id="booksGrid" class="books-select-grid">
-        <div class="empty-state">
-          <div class="empty-state-icon">⏳</div>
-          جاري تحميل الكتب...
-        </div>
-      </div>
-
-      <!-- قسم حائط درر القراءة للطلاب -->
-      <div class="card" id="studentGemsSection" style="margin-top: 30px; border-radius: var(--border-radius-lg); padding: 22px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 class="card-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
-              <span>💎 حائط درر القراءة</span>
-            </h3>
-            <p style="font-size: 0.86rem; color: var(--text-muted); margin: 4px 0 0;">
-              فوائد واقتباسات ملهمة يسطرها الطلاب والمعلمون من بطون الكتب
+    <main class="container">
+        <!-- View: Portal Closed by Administration -->
+        <div id="view-closed" class="portal-closed-box" style="display: none;">
+            <div class="portal-closed-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="portal-closed-title">بوابة الطالب معلقة حالياً</h2>
+            <p class="portal-closed-text">
+                نعتذر لكم، تم إيقاف الوصول إلى بوابة الطالب مؤقتاً بقرار من إدارة المجمع.<br>
+                يرجى مراجعة معلم الحلقة أو إدارة المنظومة لمزيد من التفاصيل.
             </p>
-          </div>
-          <button type="button" class="btn btn-primary" onclick="openStudentAddGemModal()" style="font-size: 0.88rem; padding: 7px 16px; background: linear-gradient(135deg, #f59e0b, #d97706); border:none; font-weight:700;">
-            ✨ شارك درّة جديدة
-          </button>
+            <button class="btn btn-secondary" onclick="window.studentPortal.loadState(false)">
+                <i class="fa-solid fa-rotate-right"></i> إعادة المحاولة
+            </button>
         </div>
 
-        <div id="studentGemsList" class="gems-wall-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
-          <div class="empty-state" style="grid-column: 1/-1;">جاري تحميل الدرر...</div>
+        <!-- View: Login Screen -->
+        <div id="view-login" class="login-card" style="display: none;">
+            <div class="login-emblem">
+                <i class="fa-solid fa-key"></i>
+            </div>
+            <h2>مرحباً بك في بوابة الطالب</h2>
+            <p>اختر اسمك من القائمة وأدخل رمز الدخول المكون من رقمين</p>
+
+            <div id="loginErrorMsg" class="login-error-msg">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="loginErrorText">رمز الدخول غير صحيح، يرجى مراجعة معلم الحلقة</span>
+            </div>
+
+            <form id="studentLoginForm" onsubmit="event.preventDefault(); window.studentPortal.handleLogin();">
+                <div class="login-form-group">
+                    <label><i class="fa-solid fa-chalkboard-user"></i> الحلقة القرآنية:</label>
+                    <select id="loginClassSelect" class="styled-select"></select>
+                </div>
+
+                <div class="login-form-group">
+                    <label><i class="fa-solid fa-user-graduate"></i> اسم الطالب:</label>
+                    <select id="loginStudentSelect" class="styled-select"></select>
+                </div>
+
+                <div class="login-form-group">
+                    <label><i class="fa-solid fa-lock"></i> رمز الدخول (رقمين):</label>
+                    <div class="pin-input-wrap">
+                        <input type="password" id="loginPinInput" class="pin-input" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="••" autocomplete="off" required>
+                    </div>
+                    <small style="display: block; color: var(--text-muted); font-size: 0.76rem; margin-top: 0.35rem;">
+                        <i class="fa-solid fa-circle-info"></i> الرمز تم تزويدك به من قِبل معلم الحلقة (مكون من رقمين)
+                    </small>
+                </div>
+
+                <button type="submit" class="btn-login-submit">
+                    <span>دخول لبوابتي</span>
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </form>
         </div>
-      </div>
-    </div>
 
-    <!-- ============ الشاشة 2: صفحة كتاب محدد ============ -->
-    <div id="bookDetailView" style="display: none;">
-      <!-- زر الرجوع -->
-      <button onclick="goBackToBooks()" class="back-to-books-btn" id="backBtn">
-        → الرجوع إلى الكتب
-      </button>
+        <!-- Authenticated Dashboard Views -->
+        <div id="dashboardWrap" style="display: none;">
+            <!-- View: Profile & Card -->
+            <section id="view-profile" class="portal-view active">
+                <div id="studentProfileBox"></div>
+            </section>
 
-      <!-- هيدر الكتاب -->
-      <div class="book-detail-hero" id="bookDetailHero">
-        <div class="book-detail-hero-icon" id="bookDetailIcon">📗</div>
-        <div class="book-detail-hero-info">
-          <h2 id="bookDetailName">اسم الكتاب</h2>
-          <div class="book-detail-hero-stats">
-            <span class="book-detail-stat" id="bookDetailPointsStat">
-              ⭐ <strong id="bookDetailPoints">0</strong> نقطة
-            </span>
-            <span class="book-detail-stat" id="bookDetailOrdsStat">
-              📖 <strong id="bookDetailOrdsCount">0</strong> ورد
-            </span>
-          </div>
+            <!-- View: Send Message / Late Recitation to General Director -->
+            <section id="view-messages" class="portal-view">
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h2 class="content-box-title">
+                            <i class="fa-solid fa-paper-plane" style="color: #3b82f6;"></i>
+                            <span>إشعار إنجاز ورد متأخر ومراسلة المدير العام</span>
+                        </h2>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">تصل مباشرة للمدير العام للاعتماد</span>
+                    </div>
+
+                    <!-- Message Composer Form -->
+                    <div class="msg-composer-box">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: #fff;">
+                            <i class="fa-solid fa-pen-to-square" style="color: var(--gold);"></i> مراسلة وإشعار الإنجاز:
+                        </h4>
+
+                        <form id="sendDirectorMessageForm" onsubmit="event.preventDefault(); window.studentPortal.submitMessage();">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                                        المُوجّه إليه (مستلم الرسالة):
+                                    </label>
+                                    <select id="msgRecipientSelect" class="styled-select" onchange="window.studentPortal.toggleMsgRecipient(this.value)">
+                                        <option value="director">👑 مدير منظومة نقاطي</option>
+                                        <option value="iqra_teacher">👨‍🏫 معلم القراءة (منصة اقرأ)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                                        نوع الإشعار:
+                                    </label>
+                                    <select id="msgCategorySelect" class="styled-select" onchange="window.studentPortal.toggleMsgCategory(this.value)">
+                                        <option value="late_recitation">📖 إشعار إنجاز ورد حفظ أو مراجعة متأخر</option>
+                                        <option value="general">💬 رسالة واستفسار عام للمدير</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="msgQuranFieldsRow" style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                                        اسم السورة:
+                                    </label>
+                                    <input type="text" id="msgSurahInput" class="styled-input" placeholder="مثال: سورة البقرة">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                                        عدد الصفحات:
+                                    </label>
+                                    <input type="number" id="msgPagesInput" class="styled-input" step="any" min="0" placeholder="مثال: 2">
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                                    تفاصيل الإنجاز أو رسالتك:
+                                </label>
+                                <textarea id="msgBodyInput" class="styled-textarea" placeholder="مثال: تم بحمد الله وتوفيقه إنجاز ورد الحفظ في المنزل وأرجو منكم اعتماده وجزاكم الله خيراً..." required></textarea>
+                            </div>
+
+                            <button type="submit" id="btnSubmitStudentMsg" class="btn btn-primary" style="width: 100%; padding: 0.8rem; font-weight: 800; font-size: 0.95rem;">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>إرسال الإشعار للمدير العام فوراً</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Past Messages List -->
+                    <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; color: #fff; display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--gold);"></i>
+                        <span>سجل إشعاراتك وردود المدير:</span>
+                    </h3>
+                    <div id="studentMyMessagesList"></div>
+                </div>
+            </section>
+
+            <!-- View: Quran Records (الحفظ والمراجعة) -->
+            <section id="view-quran" class="portal-view">
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h2 class="content-box-title">
+                            <i class="fa-solid fa-book-quran" style="color: var(--emerald);"></i>
+                            <span>سجل الحفظ والمراجعة القرآني</span>
+                        </h2>
+                        <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700;">
+                            رصد معتمد من المعلم
+                        </div>
+                    </div>
+
+                    <div id="quranRecordsHiddenNotice" class="records-hidden-notice" style="display: none;">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <h4>سجل الحفظ والمراجعة محجوب حالياً</h4>
+                        <p>قامت إدارة المنظومة بحجب تفاصيل السجلات مؤقتاً. بإمكانك إرسال إشعارات الحفظ والتواصل مع المدير العام عبر تبويب المراسلة أعلاه.</p>
+                    </div>
+
+                    <div id="quranRecordsActiveContent">
+                        <!-- Strip Stats -->
+                        <div class="quran-stats-strip">
+                            <div class="quran-stat-mini">
+                                <strong id="statMemoPages" style="color: var(--emerald);">0</strong>
+                                <span>إجمالي صفحات الحفظ</span>
+                            </div>
+                            <div class="quran-stat-mini">
+                                <strong id="statRevPages" style="color: #60a5fa;">0</strong>
+                                <span>إجمالي صفحات المراجعة</span>
+                            </div>
+                            <div class="quran-stat-mini">
+                                <strong id="statTotalRecitations" style="color: var(--gold);">0</strong>
+                                <span>عدد التسميعات</span>
+                            </div>
+                        </div>
+
+                        <!-- Records List -->
+                        <div id="studentQuranRecordsList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Points History (كشف حساب النقاط) -->
+            <section id="view-points" class="portal-view">
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h2 class="content-box-title">
+                            <i class="fa-solid fa-star" style="color: var(--gold);"></i>
+                            <span>كشف حساب النقاط</span>
+                        </h2>
+                        <div id="pointsTotalBadge" style="font-size: 0.95rem; font-weight: 900; color: var(--gold);">
+                            0 نقطة
+                        </div>
+                    </div>
+
+                    <div id="pointsRecordsHiddenNotice" class="records-hidden-notice" style="display: none;">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <h4>تفاصيل النقاط محجوبة حالياً</h4>
+                        <p>قامت إدارة المنظومة بحجب سجل النقاط مؤقتاً بقرار إداري.</p>
+                    </div>
+
+                    <div id="pointsRecordsActiveContent">
+                        <div id="studentPointsHistoryList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Honor Board (لوحة الشرف) -->
+            <section id="view-honor" class="portal-view">
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h2 class="content-box-title">
+                            <i class="fa-solid fa-trophy" style="color: var(--gold);"></i>
+                            <span>لوحة شرف نجوم الحلقة</span>
+                        </h2>
+                        <span id="circleStudentsCountBadge" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;"></span>
+                    </div>
+
+                    <div id="honorHiddenNotice" class="records-hidden-notice" style="display: none;">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <h4>لوحة الشرف محجوبة حالياً</h4>
+                        <p>تم حجب لوحة الشرف مؤقتاً بقرار من الإدارة.</p>
+                    </div>
+
+                    <div id="honorActiveContent">
+                        <div id="studentLeaderboardList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View: Iqra Reading Records (سجل أوراد القراءة - منصة اقرأ) -->
+            <section id="view-reading" class="portal-view">
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h2 class="content-box-title">
+                            <i class="fa-solid fa-book-open-reader" style="color: #6366f1;"></i>
+                            <span>سجل أوراد القراءة (منصة اقرأ)</span>
+                        </h2>
+                        <a id="btnGoToIqraFromView" href="https://ya2-live.vercel.app" target="_blank" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            <span>فتح منصة اقرأ</span>
+                        </a>
+                    </div>
+
+                    <div id="readingRecordsHiddenNotice" class="records-hidden-notice" style="display: none;">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <h4>سجل القراءة معلق حالياً</h4>
+                        <p>قامت إدارة المنظومة بإيقاف ظهور سجل القراءة مؤقتاً بقرار إداري.</p>
+                    </div>
+
+                    <div id="readingRecordsActiveContent">
+                        <!-- Hero Stats Row for Iqra -->
+                        <div class="hero-stats-row" style="margin-bottom: 1.25rem;">
+                            <div class="stat-card" style="border: 1px solid rgba(99, 102, 241, 0.35); background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(14, 165, 233, 0.08));">
+                                <i class="fa-solid fa-book-bookmark" style="color: #818cf8;"></i>
+                                <span class="stat-val" id="iqraTotalBooksCount">0</span>
+                                <span class="stat-lbl">الأوراد المنجزة</span>
+                            </div>
+                            <div class="stat-card" style="border: 1px solid rgba(245, 158, 11, 0.35); background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.08));">
+                                <i class="fa-solid fa-star" style="color: var(--gold);"></i>
+                                <span class="stat-val" id="iqraTotalPointsEarned">0</span>
+                                <span class="stat-lbl">مجموع نقاط اقرأ</span>
+                            </div>
+                            <div class="stat-card" style="border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.08));">
+                                <i class="fa-solid fa-clock-rotate-left" style="color: #34d399;"></i>
+                                <span class="stat-val" id="iqraOnTimePercent">100%</span>
+                                <span class="stat-lbl">الالتزام بالموعد</span>
+                            </div>
+                        </div>
+
+                        <!-- Reading Records List -->
+                        <div id="studentReadingRecordsList"></div>
+                    </div>
+                </div>
+            </section>
         </div>
-      </div>
+    </main>
 
-      <!-- أوراد القراءة المطلوبة لهذا الكتاب -->
-      <div class="card" style="margin-top: 20px;">
-        <h3 class="card-title">أوراد القراءة المطلوبة 📖</h3>
-        <div id="bookAssignmentsContainer">
-          <div class="empty-state">
-            <div class="empty-state-icon">⏳</div>
-            جاري التحميل...
-          </div>
-        </div>
-      </div>
-
-      <!-- سجل القراءات السابقة لهذا الكتاب -->
-      <div class="card" style="margin-top: 20px;">
-        <h3 class="card-title">سجل قراءاتك السابقة 📚</h3>
-        <div id="bookHistoryContainer">
-          <div class="empty-state">
-            لا توجد أوراد سابقة لهذا الكتاب.
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- نافذة المحادثة مع المعلم للطالب -->
-  <div id="studentChatModal" class="dev-modal-overlay" onclick="handleStudentChatOverlayClick(event)">
-    <div class="dev-modal-card" style="max-width: 680px; height: 80vh; max-height: 700px; display: flex; flex-direction: column; padding: 0; overflow: hidden;" role="dialog" aria-modal="true">
-      
-      <!-- هيدر المحادثة -->
-      <div class="chat-main-header" style="border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;">
-        <div class="chat-header-user">
-          <div class="chat-contact-avatar teacher" id="studentTeacherAvatar">م</div>
-          <div>
-            <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);" id="studentTeacherName">المعلم</div>
-            <div style="font-size: 0.78rem; color: var(--text-muted);">مراسلة وتواصل مباشر</div>
-          </div>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <button type="button" class="btn-chat-clear" onclick="handleClearStudentChat()" title="مسح المحادثة بالكامل">🗑️ مسح</button>
-          <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="refreshStudentActiveChat()">🔄 تحديث</button>
-          <button type="button" class="dev-modal-close-btn" onclick="closeStudentChatModal()" title="إغلاق">✕</button>
-        </div>
-      </div>
-
-      <!-- اختيار المستلم: معلم اقرأ أو مدير نقاطي -->
-      <div id="studentRecipientSelectorRow" style="padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
-          <span>المُوجّه إليه:</span>
-        </label>
-        <select id="studentRecipientSelect" class="form-control" style="padding: 5px 12px; font-size: 0.88rem; width: auto; font-weight: 700;" onchange="handleStudentRecipientChange(this.value)">
-          <option value="iqra_teacher">👨‍🏫 معلم القراءة (منصة اقرأ)</option>
-          <option value="director">👑 مدير المنظومة (منظومة نقاطي)</option>
-        </select>
-      </div>
-
-      <!-- قائمة اختيار المعلم إذا كان هناك أكثر من معلم -->
-      <div id="studentTeacherSelectorRow" style="padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: none; align-items: center; gap: 10px;">
-        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">المعلم:</label>
-        <select id="studentTeacherSelect" class="form-control" style="padding: 4px 10px; font-size: 0.85rem;" onchange="handleStudentTeacherChange(this.value)">
-        </select>
-      </div>
-
-      <!-- سجل الرسائل -->
-      <div class="chat-messages-body" id="studentChatMessagesBody" style="flex: 1;">
-        <div class="empty-state">جاري تحميل الرسائل...</div>
-      </div>
-
-      <!-- الفوتر وكتابة الرسالة -->
-      <div class="chat-footer">
-        <div class="chat-quick-replies">
-          <button type="button" class="chat-quick-chip" onclick="insertStudentQuickReply('السلام عليكم ورحمة الله يا أستاذ 🌸')">🌸 السلام عليكم</button>
-          <button type="button" class="chat-quick-chip" onclick="insertStudentQuickReply('لقد أنهيت ورد اليوم بحمد الله ✨')">✨ أنهيت ورد اليوم</button>
-          <button type="button" class="chat-quick-chip" onclick="insertStudentQuickReply('عندي استفسار عن صفحة معينة في الورد ❓')">❓ استفسار عن الورد</button>
-          <button type="button" class="chat-quick-chip" onclick="insertStudentQuickReply('جزاك الله خيراً وبارك فيك 🤲')">🤲 جزاك الله خيراً</button>
-        </div>
-        <form id="studentChatSendForm" onsubmit="handleSendStudentMessage(event)" class="chat-input-row">
-          <textarea id="studentChatMessageInput" class="chat-textarea" placeholder="اكتب رسالتك أو استفسارك لمعلمك هنا... (اضغط Enter للإرسال)" rows="1" onkeydown="handleStudentChatInputKeydown(event)"></textarea>
-          <button type="submit" id="btnStudentSendChat" class="btn-chat-send">
-            <span>إرسال</span> <span>🚀</span>
-          </button>
-        </form>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Modal: مشاركة درة جديدة للطالب -->
-  <div id="studentAddGemModal" class="dev-contact-modal-overlay" onclick="handleStudentAddGemOverlayClick(event)">
-    <div class="dev-contact-modal-content" style="max-width: 520px;">
-      <div class="dev-modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">
-        <div class="dev-modal-title">
-          <span>💎 شارك فائدة أو درّة من قراءتك</span>
-        </div>
-        <button type="button" class="dev-modal-close-btn" onclick="closeStudentAddGemModal()" title="إغلاق">✕</button>
-      </div>
-      <form onsubmit="handleStudentSubmitGem(event)" style="padding: 20px;">
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 6px; display: block;">📖 اسم الكتاب أو الموضوع:</label>
-          <input type="text" id="studentGemBookInput" class="form-control" placeholder="مثلاً: حلية طالب العلم، رياض الصالحين..." required>
-        </div>
-        <div class="form-group" style="margin-bottom: 18px;">
-          <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 6px; display: block;">✍️ نص الدرة أو الاقتباس:</label>
-          <textarea id="studentGemTextInput" class="form-control" rows="4" placeholder="اكتب الفائدة التي استوقفتك وأعجبتك في قراءتك..." required></textarea>
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button type="button" class="btn btn-secondary" onclick="closeStudentAddGemModal()">إلغاء</button>
-          <button type="submit" class="btn btn-primary" id="btnStudentSubmitGem" style="background: linear-gradient(135deg, #f59e0b, #d97706); border:none; font-weight:700;">
-            <span>نشر الدرة في الحائط ✨</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer class="student-footer">
-    <p>📚 اجعل القراءة عادة يومية — بارك الله في علمك وعملك</p>
-    <p style="margin-top: 10px;">
-      <button type="button" class="btn-dev-contact" onclick="openDevContactModal()">
-        <span>💡</span> <span>تواصل مع المبرمج للاقتراحات والملاحظات</span>
-      </button>
-    </p>
-  </footer>
-
-  <script src="js/auth.js?v=2.0"></script>
-  <script src="js/contact-dev.js?v=2.0"></script>
-  <script src="js/ibda.js?v=2.0"></script>
-  <script src="js/student.js?v=2.0"></script>
+    <script src="js/ui-kit.js"></script>
+    <script src="js/student.js"></script>
+    <script src="js/iqra-link.js"></script>
 </body>
 </html>
-
-

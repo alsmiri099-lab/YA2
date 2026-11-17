@@ -54,17 +54,10 @@ window.IbdaHub = (function () {
     const toggle = document.getElementById('ibdaVoiceRequiredToggle');
     if (!toggle) return;
     try {
-      const res = await fetch('/api/teacher/voice-capsule-setting', {
-        headers: (typeof getAuthHeaders === 'function') ? getAuthHeaders() : {}
-      });
+      const res = await fetch('/api/teacher/voice-capsule-setting');
       if (res.ok) {
         const data = await res.json();
         toggle.checked = !!data.voiceCapsuleRequired;
-        const statusEl = document.getElementById('ibdaVoiceSettingStatus');
-        if (statusEl) {
-          statusEl.textContent = data.voiceCapsuleRequired ? '✅ تم تفعيل الإلزام مع إرسال الورد' : 'ℹ️ الكبسولة الصوتية اختيارية حالياً';
-          statusEl.style.color = data.voiceCapsuleRequired ? '#10b981' : '#cbd5e1';
-        }
       }
     } catch (e) {}
   }
@@ -74,10 +67,7 @@ window.IbdaHub = (function () {
     try {
       const res = await fetch('/api/teacher/voice-capsule-setting', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...((typeof getAuthHeaders === 'function') ? getAuthHeaders() : {})
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ voiceCapsuleRequired: !!isRequired })
       });
       const data = await res.json();
@@ -166,22 +156,9 @@ window.IbdaHub = (function () {
       return;
     }
 
-    let studentName = 'طالب متميز';
-    let studentId = null;
-    let classId = null;
-
-    if (typeof getUser === 'function') {
-      const u = getUser();
-      if (u) {
-        studentName = u.fullName || u.username || studentName;
-        studentId = u.id || null;
-        classId = u.classId || null;
-      }
-    } else if (currentStudent) {
-      studentName = currentStudent.name || studentName;
-      studentId = currentStudent.id || null;
-      classId = currentStudent.classId || null;
-    }
+    const studentName = currentStudent?.name || (window.currentStudent?.name) || 'طالب متميز';
+    const studentId = currentStudent?.id || (window.currentStudent?.id) || null;
+    const classId = currentStudent?.classId || currentStudent?.class_id || (window.currentStudent?.class_id) || null;
 
     try {
       const res = await fetch('/api/ibda/gems', {
@@ -298,28 +275,16 @@ window.IbdaHub = (function () {
     }
     const bookInput = document.getElementById('ibdaCapsuleBook');
     const bookTitle = bookInput ? bookInput.value.trim() : 'ورد القراءة';
-    
-    let studentName = 'معلم / طالب';
-    let studentId = null;
-    let classId = null;
-
-    if (typeof getUser === 'function') {
-      const u = getUser();
-      if (u) {
-        studentName = u.fullName || studentName;
-        studentId = u.id || null;
-        classId = u.classId || null;
-      }
-    }
+    const student = currentStudent || window.currentStudent || {};
 
     try {
       const res = await fetch('/api/ibda/capsules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId: studentId,
-          studentName: studentName,
-          classId: classId,
+          studentId: student.id || null,
+          studentName: student.name || 'طالب متميز',
+          classId: student.classId || student.class_id || null,
           bookTitle: bookTitle,
           audioData: currentAudioDataUrl,
           durationSec: recordSeconds,
@@ -423,12 +388,14 @@ window.IbdaHub = (function () {
     else sheet.style.fontSize = '14.5px';
   }
 
+  // فتح وإغلاق لوحة التحرير السريع
   function toggleQuickEditor() {
     const drawer = document.getElementById('ibdaMagazineQuickDrawer');
     if (!drawer) return;
     drawer.style.display = drawer.style.display === 'none' ? 'block' : 'none';
   }
 
+  // تطبيق بيانات لوحة التحرير السريع
   function applyQuickEditorData() {
     const t = document.getElementById('mqeTitle');
     const s = document.getElementById('mqeSubtitle');
@@ -450,6 +417,7 @@ window.IbdaHub = (function () {
     toggleQuickEditor();
   }
 
+  // توليد صحيفة إبداع الأسبوعية
   async function generateMagazine() {
     const container = document.getElementById('ibdaMagazinePreviewArea');
     if (!container) return;
@@ -470,6 +438,7 @@ window.IbdaHub = (function () {
       <!-- شريط أدوات التصميم والتعديل السهل -->
       <div class="no-print" style="margin-bottom:1.5rem; background:rgba(15,23,42,0.75); border:1px solid rgba(255,255,255,0.12); padding:1rem 1.25rem; border-radius:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <!-- اختيار الثيم المباشر -->
           <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
             <span style="font-size:0.85rem; font-weight:700; color:#cbd5e1;">🎨 مظهر الصحيفة:</span>
             <button type="button" class="theme-pill ${magazineState.theme === 'gold' ? 'active' : ''}" onclick="IbdaHub.setMagazineTheme('gold')" style="background:#b45309; color:#fff; border:none; padding:4px 10px; border-radius:20px; font-size:0.8rem; cursor:pointer;">ذهب ملكي</button>
@@ -479,6 +448,7 @@ window.IbdaHub = (function () {
             <button type="button" class="theme-pill ${magazineState.theme === 'midnight' ? 'active' : ''}" onclick="IbdaHub.setMagazineTheme('midnight')" style="background:#4338ca; color:#fff; border:none; padding:4px 10px; border-radius:20px; font-size:0.8rem; cursor:pointer;">كحلي فاخر</button>
           </div>
 
+          <!-- أدوات التحرير والطباعة -->
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <button type="button" class="ibda-btn-secondary" onclick="IbdaHub.toggleQuickEditor()" style="padding:6px 14px; font-size:0.85rem;">
               ✏️ تعديل محتوى الصحيفة
@@ -620,6 +590,7 @@ window.IbdaHub = (function () {
     `;
   }
 
+  // مساعدة لتفادي XSS
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -630,6 +601,7 @@ window.IbdaHub = (function () {
       .replace(/'/g, '&#039;');
   }
 
+  // توليد HTML الكامل لواجهة إبداع (الميزات الـ 3 المتبقية: كبسولة، درر، صحيفة)
   function renderIbdaFullHtml(userData = {}) {
     const isTeacher = userData.role === 'teacher' || userData.isTeacher;
 
@@ -721,6 +693,7 @@ window.IbdaHub = (function () {
               الفوائد والاقتباسات المسطرة من قراءات الطلاب مع إمكانية التفاعل بالدرر والإعجاب!
             </p>
 
+            <!-- Add Gem Form -->
             <form onsubmit="IbdaHub.submitGem(event)" style="background:rgba(15,23,42,0.6); padding:1.25rem; border-radius:14px; border:1px solid rgba(245,158,11,0.2); margin-bottom:2rem;">
               <div style="display:grid; grid-template-columns:1fr 2fr; gap:0.75rem; margin-bottom:0.75rem;">
                 <input type="text" id="ibdaGemBook" placeholder="اسم الكتاب..." style="padding:0.65rem 1rem; border-radius:10px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:#fff;">
@@ -755,16 +728,7 @@ window.IbdaHub = (function () {
     `;
   }
 
-  function init(containerId, options = {}) {
-    const el = document.getElementById(containerId);
-    if (!el) return;
-    el.innerHTML = renderIbdaFullHtml(options);
-    loadCapsules();
-    checkVoiceSetting();
-  }
-
   return {
-    init,
     renderIbdaFullHtml,
     switchIbdaTab,
     loadGems,
