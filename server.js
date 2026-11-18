@@ -521,15 +521,17 @@ app.post('/api/units', async (req, res) => {
             [defaultClassId, unitId, 'الحلقة الأولى']
         );
 
-        // Seed default groups for this unit
-        const defaultGroups = [
-            ['grp_1_' + Date.now(), unitId, defaultClassId, 'فرسان القمة', '#6366f1', '🛡️'],
-            ['grp_2_' + Date.now(), unitId, defaultClassId, 'صقور المستقبل', '#10b981', '🦅'],
-            ['grp_3_' + Date.now(), unitId, defaultClassId, 'نجوم التحدي', '#f59e0b', '🌟'],
-            ['grp_4_' + Date.now(), unitId, defaultClassId, 'رواد الإبداع', '#ec4899', '🚀']
+        // Seed default criteria for this unit
+        const defaultCriteria = [
+            ['crit_1_' + Date.now(), unitId, 'الحضور', 'positive', 10, 'fa-user-check'],
+            ['crit_2_' + Date.now(), unitId, 'التبكير', 'positive', 5, 'fa-clock'],
+            ['crit_3_' + Date.now(), unitId, 'الزي', 'positive', 10, 'fa-shirt'],
+            ['crit_4_' + Date.now(), unitId, 'الحفظ', 'positive', 5, 'fa-book-quran'],
+            ['crit_5_' + Date.now(), unitId, 'المراجعة', 'positive', 10, 'fa-rotate-left'],
+            ['crit_6_' + Date.now(), unitId, 'الغياب', 'negative', 5, 'fa-user-xmark']
         ];
-        for (const g of defaultGroups) {
-            await pool.query('INSERT INTO groups (id, unit_id, class_id, name, color, icon) VALUES ($1, $2, $3, $4, $5, $6)', g);
+        for (const c of defaultCriteria) {
+            await pool.query('INSERT INTO criteria (id, unit_id, name, type, points, icon) VALUES ($1, $2, $3, $4, $5, $6)', c);
         }
 
         // Seed app_settings for this unit
@@ -653,17 +655,6 @@ app.get('/api/state', async (req, res) => {
             const defaultClassId = 'class_' + Date.now();
             await pool.query('INSERT INTO classes (id, unit_id, name) VALUES ($1, $2, $3)', [defaultClassId, unitId, 'الحلقة الأولى']);
             currentClasses = [{ id: defaultClassId, unit_id: unitId, name: 'الحلقة الأولى' }];
-
-            const defaultGroups = [
-                ['grp_1_' + Date.now(), unitId, defaultClassId, 'فرسان القمة', '#6366f1', '🛡️'],
-                ['grp_2_' + Date.now(), unitId, defaultClassId, 'صقور المستقبل', '#10b981', '🦅'],
-                ['grp_3_' + Date.now(), unitId, defaultClassId, 'نجوم التحدي', '#f59e0b', '🌟'],
-                ['grp_4_' + Date.now(), unitId, defaultClassId, 'رواد الإبداع', '#ec4899', '🚀']
-            ];
-            for (const g of defaultGroups) {
-                await pool.query('INSERT INTO groups (id, unit_id, class_id, name, color, icon) VALUES ($1, $2, $3, $4, $5, $6)', g);
-            }
-            currentGroups = defaultGroups.map(g => ({ id: g[0], unit_id: g[1], class_id: g[2], name: g[3], color: g[4], icon: g[5] }));
         }
 
         let currentCriteria = criteriaRes.rows;
